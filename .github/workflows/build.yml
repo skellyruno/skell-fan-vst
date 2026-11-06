@@ -1,6 +1,9 @@
 name: Build BreezeMod
 on:
   workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
 
 jobs:
   windows:
