@@ -1,3 +1,19 @@
+# v1.4 validation (Nov 6, 2026)
+
+The 23 JUCE-independent C++ checks cover tempo divisions, click-free mode
+crossfade continuity, dry-at-zero-mix behavior, and **five new motion-smoothing
+regressions** (bounded step rate, settling, reset, nonfinite input, low sample
+rate). These tests were run with GCC C++17 and ASan/UBSan.
+
+Eight source consistency tests cover v1.3's MSVC constexpr regression and the
+new DSP/UI files, APVTS parameter schema, and CMake registration.
+
+The JUCE SDK is unavailable locally: Windows JUCE compile, plugin binary,
+FL Studio runtime and actual CPU usage are **not verified**. Use the supplied
+GitHub Action to check those next. The v1.4 mockup is a static approximation.
+
+---
+
 # BreezeMod v1.2 validation matrix for Windows build
 
 Run `python tests/test_source.py` for source consistency. Run `ctest --test-dir build -C Release --output-on-failure` for the JUCE DSP smoke tests. The source suite has six checks; the C++17 portable suite passed 18 checks locally. The JUCE suite is attached to its CMake target; the DSP executable runs in the Windows workflow.

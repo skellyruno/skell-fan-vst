@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <array>
 #include "../PluginProcessor.h"
 class PresetBar final : public juce::Component,private juce::Timer
 {
@@ -14,9 +15,13 @@ private:
     void erasePreset();
     void randomize();
     void chooseFactory(int i);
+    void capturePresetSnapshot();
+    bool isModified() const;
     juce::File folder() const;
     juce::String name() const;
     BreezeModAudioProcessor& p;
     int factoryIndex=0;
+    juce::String snapshotName;
+    std::array<float, 10> snapshotValues {};
     juce::TextButton prev,next,current,save,remove,shuffle;
 };

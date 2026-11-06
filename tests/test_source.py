@@ -54,6 +54,40 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('bool render = true', rotary)
         self.assertIn('hornA = 1.0f - std::exp', rotary)
 
+    def test_msvc_constexpr_and_image_rectangles(self):
+        """Regression for MSVC C2131 in Theme.h and C4244 drawing warnings."""
+        theme = (ROOT / 'Source/ui/Theme.h').read_text()
+        fan = (ROOT / 'Source/ui/FanView.cpp').read_text()
+        knob = (ROOT / 'Source/ui/ChromeKnob.cpp').read_text()
+        lfo = (ROOT / 'Source/dsp/Lfo.h').read_text()
+        self.assertNotRegex(theme, r'constexpr\s+juce::Rectangle')
+        for name in ('rotorRect', 'grilleRect', 'hubRect', 'plateRect'):
+            self.assertRegex(theme, rf'inline const juce::Rectangle<float> {name}\b')
+        self.assertIn('juce::RectanglePlacement::stretchToFit', fan)
+        self.assertNotIn('hubRect.getX(),hubRect.getY()', fan)
+        self.assertIn('juce::Rectangle<float>{cx-32.0f*scale', knob)
+        self.assertIn('static_cast<float>(std::sin', lfo)
+
+    def test_v14_ui_and_modulation_safety(self):
+        processor = (ROOT / 'Source/PluginProcessor.cpp').read_text()
+        hdr = (ROOT / 'Source/PluginProcessor.h').read_text()
+        editor = (ROOT / 'Source/PluginEditor.cpp').read_text()
+        rotary = (ROOT / 'Source/dsp/RotarySim.h').read_text()
+        tests = (ROOT / 'tests/PortableTests.cpp').read_text()
+        cmake = (ROOT / 'CMakeLists.txt').read_text()
+        self.assertIn('ModulationSmoother', hdr)
+        self.assertIn('vibratoMotion', processor)
+        self.assertIn('chorusMotion', processor)
+        self.assertIn('tremoloMotion', processor)
+        self.assertIn('hornMotion[ch].tick(', rotary)
+        self.assertIn('displayRms', hdr)
+        self.assertIn('displayPeak', hdr)
+        self.assertIn('outputMeter.refresh()', editor)
+        self.assertIn('modeInfo.refresh()', editor)
+        self.assertIn('StatusPanels.cpp', cmake)
+        self.assertIn('smoothingTests()', tests)
+        self.assertRegex(processor, r'setProperty\("uiWidth",765,nullptr\)')
+
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text()
         self.assertIn('initProcessing', sat)

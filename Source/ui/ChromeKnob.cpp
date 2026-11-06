@@ -97,7 +97,9 @@ void ChromeKnob::paint(juce::Graphics& g)
         g.fillRoundedRectangle(cx-32*scale,cy-radius-27*scale,64*scale,20*scale,3*scale);
         g.setColour(juce::Colours::white);
         g.setFont(Theme::font(12*scale,true));
-        g.drawText(displayValue(),cx-32*scale,cy-radius-27*scale,64*scale,20*scale,
+        g.drawText(displayValue(),
+                   juce::Rectangle<float>{cx-32.0f*scale,cy-radius-27.0f*scale,
+                                          64.0f*scale,20.0f*scale},
                    juce::Justification::centred);
     }
 }

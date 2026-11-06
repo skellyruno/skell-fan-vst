@@ -85,7 +85,8 @@ void BreezeModAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
 BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProcessor& p)
     :AudioProcessorEditor(&p),processor(p),fan(p),top(p),presets(p),depth(p),
      rate(p,"rate","RATE"),syncRate(p,"syncDiv","RATE"),wave(p,"wave","WAVE"),
-     saturation(p,"saturation","SATURATION",true,true),scope(p),rateReadout(p)
+     saturation(p,"saturation","SATURATION",true,true),scope(p),rateReadout(p),
+     outputMeter(p),modeInfo(p)
 {
     setLookAndFeel(&theme);
     for(auto* c:{static_cast<juce::Component*>(&stage),static_cast<juce::Component*>(&fan),
@@ -94,7 +95,7 @@ BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProce
                  static_cast<juce::Component*>(&rate),static_cast<juce::Component*>(&syncRate),
                  static_cast<juce::Component*>(&wave),static_cast<juce::Component*>(&saturation)})
         addAndMakeVisible(c);
-    fanSwitch.setButtonText("⟳");
+    fanSwitch.setButtonText("Ⅱ");
     fanSwitch.setTooltip("Pause the fan animation (does not affect audio)");
     fanSwitch.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff252b30));
     fanSwitch.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffeaf1f3));
@@ -104,10 +105,15 @@ BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProce
         enabled=!enabled;
         processor.apvts.state.setProperty("uiFanAnimation",enabled,nullptr);
         fan.setAnimationEnabled(enabled);
+        fanSwitch.setButtonText(enabled?"Ⅱ":"▶");
     };
     addAndMakeVisible(fanSwitch);
     addAndMakeVisible(rateReadout);
-    fan.setAnimationEnabled(static_cast<bool>(p.apvts.state.getProperty("uiFanAnimation",true)));
+    addAndMakeVisible(outputMeter);
+    addAndMakeVisible(modeInfo);
+    const bool initialAnimation=static_cast<bool>(p.apvts.state.getProperty("uiFanAnimation",true));
+    fan.setAnimationEnabled(initialAnimation);
+    fanSwitch.setButtonText(initialAnimation?"Ⅱ":"▶");
     scope.setVisible(static_cast<bool>(p.apvts.state.getProperty("uiScopeVisible",false)));
     addChildComponent(scope);
     top.onScope=[this]
@@ -182,6 +188,8 @@ void BreezeModAudioProcessorEditor::resized()
     place(wave,601,791,85,104);place(saturation,648,661,57,70);
     place(scope,18,729,200,136);
     place(rateReadout,476,907,239,24);
+    place(outputMeter,25,743,116,183);
+    place(modeInfo,778,743,155,183);
     // Non-visible ComboBoxes stay out of the mouse hit region.
     processor.apvts.state.setProperty("uiWidth",getWidth(),nullptr);
     processor.apvts.state.setProperty("uiHeight",getHeight(),nullptr);
@@ -202,5 +210,7 @@ void BreezeModAudioProcessorEditor::timerCallback()
     }
     rate.setVisible(s==0);syncRate.setVisible(s!=0);
     rateReadout.repaint();
+    outputMeter.refresh();
+    modeInfo.refresh();
     rate.toFront(false); if(s!=0)syncRate.toFront(false);
 }

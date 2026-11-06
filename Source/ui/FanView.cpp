@@ -47,8 +47,11 @@ void FanView::paint(juce::Graphics& g)
     const float sx=getWidth()/Theme::W,sy=getHeight()/Theme::H;
     g.addTransform(juce::AffineTransform::scale(sx,sy));
     g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
-    if(body.isValid())g.drawImage(body,0,0,Theme::W,Theme::H,
-                                 0,0,body.getWidth(),body.getHeight());
+    // Floating-point destination rectangles avoid implicit float->int truncation
+    // and keep artwork aligned at fractional HiDPI scales.
+    if(body.isValid())
+        g.drawImage(body,juce::Rectangle<float>{0.0f,0.0f,Theme::W,Theme::H},
+                    juce::RectanglePlacement::stretchToFit);
     auto rotorRect=Theme::rotorRect;
     const auto drawBlade=[&](const juce::Image& im,float opacity,double a)
     {
@@ -70,11 +73,11 @@ void FanView::paint(juce::Graphics& g)
     }
     g.setOpacity(1.0f);
     const auto hubRect=Theme::hubRect;
-    if(hub.isValid())g.drawImage(hub,hubRect.getX(),hubRect.getY(),hubRect.getWidth(),hubRect.getHeight(),
-                                0,0,hub.getWidth(),hub.getHeight());
+    if(hub.isValid())
+        g.drawImage(hub,hubRect,juce::RectanglePlacement::stretchToFit);
     const auto c=Theme::grilleRect;
-    if(grille.isValid())g.drawImage(grille,c.getX(),c.getY(),c.getWidth(),c.getHeight(),
-                                   0,0,grille.getWidth(),grille.getHeight());
+    if(grille.isValid())
+        g.drawImage(grille,c,juce::RectanglePlacement::stretchToFit);
     if(processor.apvts.getRawParameterValue("power")->load()<0.5f)
     {
         g.setColour(Theme::black.withAlpha(0.35f));

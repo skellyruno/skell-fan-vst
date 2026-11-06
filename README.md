@@ -1,3 +1,62 @@
+# BreezeMod v1.4 — Modulation motion + UI polish (November 6, 2026)
+
+**Built on v1.3** and preserves the same manufacturer/plugin identifiers and 11
+APVTS parameter IDs, so existing host automation and saved parameters remain
+compatible. This package includes source and original PNG assets, not a compiled
+binary. The static preview is a *layout approximation*, not a host screenshot.
+
+## New in v1.4
+
+- **Smooth LFO edges**: new allocation-free `ModulationSmoother` with its
+  coefficient calculated once per sample rate. Vibrato and chorus glide their
+  fractional delay read heads over 1.5–2 ms; square/saw tremolo gains glide
+  over 1.4 ms, and rotary horn/drum motion is smoothed over 2–3 ms. The change
+  reduces abrupt read-head jumps and modulation zippering; it does not
+  guarantee removal of all artifacts at extreme settings.
+- **Rotary efficiency**: simple wrap logic replaces per-sample `fmod` for rotor
+  phase; rotary inertia remains separate for the horn and drum.
+- **Live stereo output meter**: two compact signal columns with RMS levels,
+  peak indicators, and clip hold. Values come from lock-free atomics published
+  by the audio thread. Readings decay to silence if the host stops processing.
+- **Mode/status panel**: current mode, effect description, waveform, host/free
+  clock status, and live rate, drawn as vector UI rather than external assets.
+- **Clearer interaction**: Depth slider shows its actual value and accent
+  track; the preset name gains an asterisk after editing sound parameters; the
+  fan-animation toggle displays pause/play appropriately.
+- **Smaller window**: new default 765 × 787 (~20% smaller in width/height),
+  while respecting the original 956:984 aspect ratio and allowing resize.
+  Previously saved window sizes continue to restore.
+
+## Validation and known limitations
+
+- 8 Python source/asset consistency tests pass.
+- 23 portable DSP control tests pass with GCC C++17; also run with
+  AddressSanitizer and UndefinedBehaviorSanitizer.
+- JUCE-based DSP smoke tests are included in CMake/CI but cannot run here
+  without the JUCE SDK. **No full VST3/Standalone build or DAW test has been
+  verified locally.** Run the Windows GitHub Actions workflow and test the
+  resulting plugin in FL Studio, especially automation and preset recall.
+- The new smoothing may soften intentionally sharp square/saw movement; it
+  trades hard-edged modulation for lower transient artifacts.
+
+---
+
+## BreezeMod v1.3 — MSVC build fix (October 21, 2026)
+
+A Windows CI log reported MSVC **C2131** at `Source/ui/Theme.h` lines 11–14.
+Those were `constexpr juce::Rectangle<float>` objects. JUCE 8.0.12's rectangle
+constructor is not `constexpr` in that MSVC build, so compilation failed in
+every translation unit that included this header. Changed them to C++17
+`inline const juce::Rectangle<float>` (immutable shared constants, no
+compile-time constructor requirement). Also changed fan-layer image drawing
+to float destination rectangles and made the knob tooltip use a float
+rectangle; made the LFO's double-to-float conversion explicit. Added an
+offline regression test to block reintroducing this issue.
+
+**Validation:** offline C++ and Python tests can run without JUCE; the full
+Windows VST3/Standalone build must still run on the supplied GitHub Actions
+workflow. No verified plugin binary is included.
+
 # BreezeMod v1.2 — four-mode fan-inspired modulation
 
 JUCE 8/C++17 stereo audio-effect plugin created from the user-supplied *compiled StopDial* CMake and GitHub Actions template. Outputs **VST3** and **Standalone**. UI design resolution 956 × 984 with constrained aspect ratio.
