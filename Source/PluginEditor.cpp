@@ -18,6 +18,11 @@ void BreezeModAudioProcessorEditor::Stage::paint(juce::Graphics& g)
                                juce::Colour(0xff040405),0,984,false);
     floor.addColour(0.35,juce::Colour(0xff090b0e));
     g.setGradientFill(floor);g.fillRect(0,585,956,399);
+    // Cached ambient light under the fan; no additional bitmap or frame cost.
+    juce::ColourGradient halo(juce::Colour(0xff225579).withAlpha(0.19f),466,376,
+                              juce::Colours::transparentBlack,810,720,true);
+    g.setGradientFill(halo);
+    g.fillEllipse(115.0f,67.0f,701.0f,676.0f);
     g.setColour(juce::Colour(0xff131519));g.fillRect(0,585,956,2);
 }
 void BreezeModAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
@@ -35,11 +40,23 @@ void BreezeModAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     label(g,"ROTARY",{301,885,54,20},11.0f);
     label(g,"TREMOLO",{351,885,57,20},11.0f);
     label(g,"CHORUS",{403,885,55,20},11.0f);
-    // Rate face + four readouts, manually aligned with screenshot.
-    label(g,"8",{464,807,28,22},12);
-    label(g,"24",{547,807,27,22},12);
-    label(g,"0",{465,859,27,22},12);
-    label(g,"32",{549,859,28,22},12);
+    // Read the actual sync mode: never display Hz ticks for host divisions.
+    const bool hostSync = processor.apvts.getRawParameterValue("syncMode")
+                              ->load(std::memory_order_relaxed) > 0.5f;
+    if (hostSync)
+    {
+        label(g,"1/2",{462,807,30,22},10);
+        label(g,"1/32",{542,807,38,22},10);
+        label(g,"1/1",{463,859,30,22},10);
+        label(g,"1/64",{542,859,38,22},10);
+    }
+    else
+    {
+        label(g,"8",{464,807,28,22},12);
+        label(g,"24",{547,807,27,22},12);
+        label(g,"0",{465,859,27,22},12);
+        label(g,"32",{549,859,28,22},12);
+    }
     // Four stylised waveform glyphs around the WAVE knob.
     g.setColour(juce::Colour(0xff30373e));
     g.setFont(Theme::font(20));
@@ -83,7 +100,7 @@ void BreezeModAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
 }
 
 BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProcessor& p)
-    :AudioProcessorEditor(&p),processor(p),fan(p),top(p),presets(p),depth(p),
+    :AudioProcessorEditor(&p),plate(p),processor(p),fan(p),top(p),presets(p),depth(p),
      rate(p,"rate","RATE"),syncRate(p,"syncDiv","RATE"),wave(p,"wave","WAVE"),
      saturation(p,"saturation","SATURATION",true,true),scope(p),rateReadout(p),
      outputMeter(p),modeInfo(p)
@@ -209,6 +226,11 @@ void BreezeModAudioProcessorEditor::timerCallback()
         noteKeys[i]->setToggleState(i==t,juce::dontSendNotification);
     }
     rate.setVisible(s==0);syncRate.setVisible(s!=0);
+    if (lastPlateSync != s)
+    {
+        lastPlateSync = s;
+        plate.repaint(); // cached face is invalidated only when the sync mode flips
+    }
     rateReadout.repaint();
     outputMeter.refresh();
     modeInfo.refresh();

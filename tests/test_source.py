@@ -88,6 +88,17 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('smoothingTests()', tests)
         self.assertRegex(processor, r'setProperty\("uiWidth",765,nullptr\)')
 
+    def test_v15_input_safety_and_sync_plates(self):
+        processor = (ROOT / 'Source/PluginProcessor.cpp').read_text(encoding='utf-8')
+        helper = (ROOT / 'Source/dsp/ModulationMath.h').read_text(encoding='utf-8')
+        editor = (ROOT / 'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        tests = (ROOT / 'tests/PortableTests.cpp').read_text(encoding='utf-8')
+        self.assertIn('sanitizeAudioSample', helper)
+        self.assertIn('sanitizeAudioSample(wetInput[j])', processor)
+        self.assertIn('lastPlateSync != s', editor)
+        self.assertIn('if (hostSync)', editor)
+        self.assertIn('inputSafetyTests()', tests)
+
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')
         self.assertIn('initProcessing', sat)

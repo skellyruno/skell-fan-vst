@@ -56,6 +56,15 @@ void TopBar::paint(juce::Graphics& g)
     g.fillAll(Theme::bar);
     g.addTransform(juce::AffineTransform::scale(getWidth()/956.0f,getHeight()/60.0f));
     g.setColour(juce::Colour(0xff272729));g.fillRect(0,59,956,1);
+    // A subtle original wordmark in the unused strip before the preset browser.
+    g.setColour(juce::Colour(0xffd2e5ed));
+    g.setFont(Theme::font(15.5f,true));
+    g.drawText("BREEZEMOD",101,11,132,21,juce::Justification::centredLeft);
+    g.setColour(juce::Colour(0xff5f98b4));
+    g.setFont(Theme::font(10.0f,true));
+    g.drawText("SKELL  /  MOTION",102,31,132,16,juce::Justification::centredLeft);
+    g.setColour(juce::Colour(0xff293742));
+    g.drawVerticalLine(235,13.0f,47.0f);
     g.setColour(Theme::muted);
     g.setFont(Theme::font(15.0f,true));
     g.drawText("W I D T H",680,11,74,40,juce::Justification::centred);

@@ -202,6 +202,13 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
                                              buffer.getReadPointer(sourceChannel,blockStart),count);
             juce::FloatVectorOperations::copy(processed.getWritePointer(ch),
                                              buffer.getReadPointer(sourceChannel,blockStart),count);
+            // Keep NaN/Inf from upstream effects out of persistent delay,
+            // rotary and saturation state. Vector-copied finite audio is untouched.
+            auto* const dry = original.getWritePointer(ch);
+            auto* const wetInput = processed.getWritePointer(ch);
+            for (int j=0; j<count; ++j)
+                if (!std::isfinite(wetInput[j]))
+                    dry[j] = wetInput[j] = breeze::dsp::sanitizeAudioSample(wetInput[j]);
         }
         const float satAmount=p("saturation")*.01f;
         // Saturation never mutates the host buffer before the final output stage.
