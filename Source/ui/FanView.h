@@ -13,6 +13,6 @@ private:
     void timerCallback() override;
     BreezeModAudioProcessor& processor;
     juce::Image body,rotor,blur,grille,hub;
-    bool enabled=true;
+    bool enabled=true, lastPowerOn=true;
     double lastTime=0.0,angle=0.0,speed=0.0;
 };

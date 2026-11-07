@@ -182,6 +182,8 @@ void PresetBar::randomize()
     param("width",static_cast<float>(rng.nextInt(101)));
     param("mix",static_cast<float>(25+rng.nextInt(66)));
     p.apvts.state.setProperty("uiPresetName","Randomized",nullptr);
-    capturePresetSnapshot();
+    // Randomize creates unsaved sound changes: preserve the last saved/factory
+    // parameter snapshot so the preset name shows the dirty (*) indicator.
+    snapshotName = name();
     timerCallback();
 }
