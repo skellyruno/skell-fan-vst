@@ -28,8 +28,11 @@ private:
     class PlateOverlay final : public juce::Component
     {
     public:
-        PlateOverlay(){setInterceptsMouseClicks(false,false);setBufferedToImage(true);}
+        explicit PlateOverlay(BreezeModAudioProcessor& p) : processor(p)
+        { setInterceptsMouseClicks(false,false); setBufferedToImage(true); }
         void paint(juce::Graphics&) override;
+    private:
+        BreezeModAudioProcessor& processor;
     } plate;
     class RateReadout final : public juce::Component
     {
@@ -60,5 +63,6 @@ private:
     juce::ComboBox modeChoice,syncChoice,noteChoice;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modeAttach,syncAttach,noteAttach;
     juce::ComponentBoundsConstrainer constrainer;
+    int lastPlateSync = -1;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BreezeModAudioProcessorEditor)
 };

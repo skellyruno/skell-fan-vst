@@ -1,11 +1,26 @@
-# BreezeMod v1.4 — Modulation motion + UI polish (November 6, 2026)
+# BreezeMod v1.5 — UI & audio-safety update (November 7, 2026)
+
+This version preserves the original fan artwork, plugin identity, 11 automatable
+parameters and factory/user preset formats.
+
+## New in v1.5
+
+- **DSP safety:** reject NaN and infinite samples from upstream effects before
+  they contaminate the delay, saturation, rotary, or meter history. All finite
+  input samples, including signals above 0 dBFS, remain untouched.
+- **Tempo-sync UI:** manual RATE ticks now change into musical divisions in
+  HOST mode; the static plate cache refreshes only on mode changes.
+- **Visual refinement:** restrained BreezeMod/Skell wordmark in the top bar and
+  a subtle blue ambient glow behind the fan, both vector-rendered.
+- **Performance:** retain idle animation throttling, lock-free metering and
+  allocation-free DSP with no new audio-thread memory allocation.
 
 **Built on v1.3** and preserves the same manufacturer/plugin identifiers and 11
 APVTS parameter IDs, so existing host automation and saved parameters remain
 compatible. This package includes source and original PNG assets, not a compiled
 binary. The static preview is a *layout approximation*, not a host screenshot.
 
-## New in v1.4
+## Previously in v1.4
 
 - **Smooth LFO edges**: new allocation-free `ModulationSmoother` with its
   coefficient calculated once per sample rate. Vibrato and chorus glide their
@@ -105,4 +120,11 @@ Fonts use the host's system sans typeface as in the original StopDial project; n
 
 ## Build validation
 
-This archive contains **source and assets, not a compiled binary**. Six offline source/asset checks passed with `python tests/test_source.py`. The separate JUCE-free `BreezeModPortableTests` was compiled with GCC C++17 and passed **18 checks**, including rapid mode re-targeting, host note divisions, and zero-mix dry transparency. On Windows, CMake builds **both** test targets: `BreezeModPortableTests` and `BreezeModDspTests`. v1.1 accidentally omitted `tests/DSPTests.cpp` from the CMake target, preventing a successful link; v1.2 fixes this. The JUCE DSP executable tests LFO phase, fractional delay including exact zero delay, saturation and buffer-size invariance, and rotary finite output. JUCE-based tests **have not been run here**. The container used to assemble this project had no installed JUCE SDK and could not access GitHub to fetch one, so the actual Windows/FL Studio build and plugin smoke test must be run using GitHub Actions (included). No successful compile is claimed for BreezeMod. Check `build.yml` artifact output, then run the standalone to validate visually, and finally test VST3 scanning in FL Studio.
+The v1.4 VST3 and Standalone builds succeeded in Windows GitHub Actions on
+November 7, 2026. For v1.5, local testing passed 9 source checks and 26
+portable DSP checks, including sanitizer runs. The v1.5 Windows workflow must
+still be completed before release; validate preset recall, host tempo sync,
+resizing and audio quality in FL Studio after compilation.
+
+Build VST3 and Standalone through Actions > Build BreezeMod. The workflow runs
+JUCE DSP and portable C++ tests, then publishes the Windows plugin artifact.

@@ -1,3 +1,18 @@
+# BreezeMod v1.5 — UI clarity and audio safety (November 7, 2026)
+
+- Fixed non-finite input propagation into persistent stereo DSP state while
+  preserving all ordinary finite samples at their original level.
+- Added 3 new portable audio-input guard cases and a ninth source consistency
+  test. Updated MSVC CI runs both JUCE DSP and JUCE-free regression tests.
+- Added HOST-aware rate face markings, a cached ambient fan halo, and a
+  compact wordmark; retained original retro blue fan visual assets.
+- Maintains binary compatibility: all 11 existing APVTS parameter IDs and
+  manufacturer/plugin codes are unchanged.
+- Previous v1.4 source successfully built VST3 and Standalone on Windows;
+  v1.5 requires a fresh workflow run before shipping.
+
+---
+
 # BreezeMod v1.4 — Modulation motion + UI polish (November 6, 2026)
 
 **Built on v1.3** and preserves the same manufacturer/plugin identifiers and 11

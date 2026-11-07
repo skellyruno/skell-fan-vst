@@ -33,6 +33,19 @@ void tempoTests()
     check(std::abs(bpm/(60.0*hostCycleBeats(2,0))-2.0)<1e-12,
           "120 BPM quarter note gives two LFO cycles per second");
 }
+void inputSafetyTests()
+{
+    using breeze::dsp::sanitizeAudioSample;
+    const float nan=std::numeric_limits<float>::quiet_NaN();
+    const float inf=std::numeric_limits<float>::infinity();
+    check(sanitizeAudioSample(nan)==0.0f && sanitizeAudioSample(inf)==0.0f
+          && sanitizeAudioSample(-inf)==0.0f,
+          "NaN and infinities cannot contaminate DSP state");
+    check(sanitizeAudioSample(1.5f)==1.5f && sanitizeAudioSample(-7.0f)==-7.0f,
+          "finite audio stays unchanged, even above 0 dBFS");
+    check(sanitizeAudioSample(0.0f)==0.0f && sanitizeAudioSample(-0.5f)==-0.5f,
+          "normal input is bit-preserved");
+}
 void dryTests()
 {
     using breeze::dsp::vibratoDryAtMix;
@@ -131,7 +144,7 @@ void modeTests()
 }
 int main()
 {
-    tempoTests();dryTests();modeTests();smoothingTests();
+    tempoTests();dryTests();modeTests();smoothingTests();inputSafetyTests();
     std::cout << (errors==0?"All portable DSP tests passed\n":"Portable tests failed\n");
     return errors==0?0:1;
 }

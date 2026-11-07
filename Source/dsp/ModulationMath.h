@@ -7,6 +7,13 @@
 // include JUCE so the transition and timing rules can be tested offline.
 namespace breeze::dsp
 {
+// Block NaN/Infinity from upstream effects before persistent DSP state.
+// Leave all finite audio unchanged, including levels above 0 dBFS.
+inline float sanitizeAudioSample(float input) noexcept
+{
+    return std::isfinite(input) ? input : 0.0f;
+}
+
 inline double hostCycleBeats(int division, int noteType) noexcept
 {
     division = std::clamp(division, 0, 6);
