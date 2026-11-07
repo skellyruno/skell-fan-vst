@@ -1,10 +1,14 @@
 #include "PresetBar.h"
 #include "Theme.h"
+#include <cmath>
 namespace
 {
 constexpr const char* factories[] = {"Chorus - Classic","Chorus - Wide",
  "Vibrato - Tape","Rotary - Vintage","Tremolo - Pulse","Rotary - Slow"};
 constexpr int presetCount=6;
+// Exclude bypass: switching plugin power does not edit a sound preset.
+constexpr const char* soundParams[]={"mode","depth","rate","syncMode",
+    "syncDiv","noteType","wave","saturation","width","mix"};
 }
 PresetBar::PresetBar(BreezeModAudioProcessor& proc):p(proc)
 {
@@ -23,6 +27,7 @@ PresetBar::PresetBar(BreezeModAudioProcessor& proc):p(proc)
     save.onClick=[this]{storePreset();};
     remove.onClick=[this]{erasePreset();};
     shuffle.onClick=[this]{randomize();};
+    capturePresetSnapshot();
     timerCallback();startTimerHz(6);
 }
 void PresetBar::paint(juce::Graphics& g)
@@ -46,7 +51,10 @@ void PresetBar::timerCallback()
     const auto text=name();
     for(int i=0;i<presetCount;++i)
         if(text==factories[i]) factoryIndex=i;
-    if(current.getButtonText()!=text)current.setButtonText(text);
+    if(snapshotName!=text) capturePresetSnapshot();
+    const auto caption=text+(isModified()?"  *":"");
+    if(current.getButtonText()!=caption)current.setButtonText(caption);
+    current.setTooltip(isModified()?"Unsaved parameter changes. Save to keep them.":"Select or save a preset");
 }
 juce::String PresetBar::name() const
 {return p.apvts.state.getProperty("uiPresetName","Chorus - Classic").toString();}
@@ -56,7 +64,27 @@ juce::File PresetBar::folder() const
        .getChildFile("Skell Audio").getChildFile("BreezeMod").getChildFile("Presets");
 }
 void PresetBar::chooseFactory(int i)
-{factoryIndex=juce::jlimit(0,presetCount-1,i);p.loadFactoryPreset(factoryIndex);timerCallback();}
+{
+    factoryIndex=juce::jlimit(0,presetCount-1,i);
+    p.loadFactoryPreset(factoryIndex);
+    capturePresetSnapshot();
+    timerCallback();
+}
+void PresetBar::capturePresetSnapshot()
+{
+    snapshotName=name();
+    for(size_t i=0;i<snapshotValues.size();++i)
+        snapshotValues[i]=p.apvts.getRawParameterValue(soundParams[i])
+            ->load(std::memory_order_relaxed);
+}
+bool PresetBar::isModified() const
+{
+    for(size_t i=0;i<snapshotValues.size();++i)
+        if(std::abs(p.apvts.getRawParameterValue(soundParams[i])
+                       ->load(std::memory_order_relaxed)-snapshotValues[i])>0.011f)
+            return true;
+    return false;
+}
 void PresetBar::popupMenu()
 {
     juce::PopupMenu menu;
@@ -85,6 +113,7 @@ void PresetBar::popupMenu()
                     {
                         safe->p.apvts.replaceState(juce::ValueTree::fromXml(*xml));
                         safe->p.apvts.state.setProperty("uiPresetName",files[idx].getFileNameWithoutExtension(),nullptr);
+                        safe->capturePresetSnapshot();
                         safe->timerCallback();
                     }
                 }
@@ -110,7 +139,10 @@ void PresetBar::storePreset()
                 tree.setProperty("uiPresetName",title,nullptr);
                 if(auto xml=tree.createXml())
                     if(xml->writeTo(directory.getChildFile(title+".xml")))
+                    {
                         safe->p.apvts.state.setProperty("uiPresetName",title,nullptr);
+                        safe->capturePresetSnapshot();
+                    }
             }
         }
         delete dialog;
@@ -150,4 +182,8 @@ void PresetBar::randomize()
     param("width",static_cast<float>(rng.nextInt(101)));
     param("mix",static_cast<float>(25+rng.nextInt(66)));
     p.apvts.state.setProperty("uiPresetName","Randomized",nullptr);
+    // Randomize creates unsaved sound changes: preserve the last saved/factory
+    // parameter snapshot so the preset name shows the dirty (*) indicator.
+    snapshotName = name();
+    timerCallback();
 }

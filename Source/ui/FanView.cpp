@@ -25,8 +25,11 @@ void FanView::timerCallback()
     const auto now=juce::Time::getMillisecondCounterHiRes();
     const double dt=juce::jlimit(0.0,0.08,(now-lastTime)*0.001);
     lastTime=now;
-    const float running=processor.apvts.getRawParameterValue("power")->load();
-    const double target=(enabled&&running>0.5f)?juce::jlimit(0.0,3.0,
+    const bool powerOn = processor.apvts.getRawParameterValue("power")->load() > 0.5f;
+    const bool powerChanged = powerOn != lastPowerOn;
+    lastPowerOn = powerOn;
+    const double speedBefore = speed;
+    const double target=(enabled&&powerOn)?juce::jlimit(0.0,3.0,
                        static_cast<double>(processor.displayRate.load())*0.32):0.0;
     const double coeff=1.0-std::exp(-dt/0.40);
     speed+=(target-speed)*coeff;
@@ -39,16 +42,20 @@ void FanView::timerCallback()
         startTimerHz(desiredHz);
     // Only repaint the fan head, keeping static artwork out of the dirty region.
     const float x=getWidth()/Theme::W,y=getHeight()/Theme::H;
-    repaint(juce::Rectangle<int>(juce::roundToInt(145*x),juce::roundToInt(68*y),
-                                 juce::roundToInt(645*x),juce::roundToInt(642*y)));
+    if (powerChanged || speedBefore > 0.008 || speed > 0.008)
+        repaint(juce::Rectangle<int>(juce::roundToInt(145*x),juce::roundToInt(68*y),
+                                     juce::roundToInt(645*x),juce::roundToInt(642*y)));
 }
 void FanView::paint(juce::Graphics& g)
 {
     const float sx=getWidth()/Theme::W,sy=getHeight()/Theme::H;
     g.addTransform(juce::AffineTransform::scale(sx,sy));
     g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
-    if(body.isValid())g.drawImage(body,0,0,Theme::W,Theme::H,
-                                 0,0,body.getWidth(),body.getHeight());
+    // Floating-point destination rectangles avoid implicit float->int truncation
+    // and keep artwork aligned at fractional HiDPI scales.
+    if(body.isValid())
+        g.drawImage(body,juce::Rectangle<float>{0.0f,0.0f,Theme::W,Theme::H},
+                    juce::RectanglePlacement::stretchToFit);
     auto rotorRect=Theme::rotorRect;
     const auto drawBlade=[&](const juce::Image& im,float opacity,double a)
     {
@@ -70,11 +77,11 @@ void FanView::paint(juce::Graphics& g)
     }
     g.setOpacity(1.0f);
     const auto hubRect=Theme::hubRect;
-    if(hub.isValid())g.drawImage(hub,hubRect.getX(),hubRect.getY(),hubRect.getWidth(),hubRect.getHeight(),
-                                0,0,hub.getWidth(),hub.getHeight());
+    if(hub.isValid())
+        g.drawImage(hub,hubRect,juce::RectanglePlacement::stretchToFit);
     const auto c=Theme::grilleRect;
-    if(grille.isValid())g.drawImage(grille,c.getX(),c.getY(),c.getWidth(),c.getHeight(),
-                                   0,0,grille.getWidth(),grille.getHeight());
+    if(grille.isValid())
+        g.drawImage(grille,c,juce::RectanglePlacement::stretchToFit);
     if(processor.apvts.getRawParameterValue("power")->load()<0.5f)
     {
         g.setColour(Theme::black.withAlpha(0.35f));

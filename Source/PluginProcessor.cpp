@@ -19,8 +19,8 @@ BreezeModAudioProcessor::BreezeModAudioProcessor()
     apvts.state.setProperty("uiPresetName","Chorus - Classic",nullptr);
     apvts.state.setProperty("uiFanAnimation",true,nullptr);
     apvts.state.setProperty("uiScopeVisible",false,nullptr);
-    apvts.state.setProperty("uiWidth",956,nullptr);
-    apvts.state.setProperty("uiHeight",984,nullptr);
+    apvts.state.setProperty("uiWidth",765,nullptr);
+    apvts.state.setProperty("uiHeight",787,nullptr);
 }
 
 APVTS::ParameterLayout BreezeModAudioProcessor::makeLayout()
@@ -71,6 +71,19 @@ void BreezeModAudioProcessor::prepareToPlay(double rate,int block)
     chorusDelay.prepare(sr,45.0);
     dryDelay.prepare(sr,35.0);
     rotary.prepare(sr);
+    for(int ch=0; ch<2; ++ch)
+    {
+        vibratoMotion[static_cast<size_t>(ch)].prepare(sr, 1.5, 4.0f);
+        tremoloMotion[static_cast<size_t>(ch)].prepare(sr, 1.4, 0.0f);
+        for(int voice=0; voice<3; ++voice)
+            chorusMotion[static_cast<size_t>(ch)][static_cast<size_t>(voice)]
+                .prepare(sr, 2.0, 12.0f + voice * 4.0f);
+    }
+    for(int ch=0; ch<2; ++ch)
+    {
+        displayRms[static_cast<size_t>(ch)].store(0.0f, std::memory_order_relaxed);
+        displayPeak[static_cast<size_t>(ch)].store(0.0f, std::memory_order_relaxed);
+    }
     original.setSize(2,maxBlock,false,true,true);
     processed.setSize(2,maxBlock,false,true,true);
     modeFader.prepare(juce::jlimit(0,3,static_cast<int>(p("mode"))),
@@ -107,6 +120,8 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
     juce::ScopedNoDenormals noDenormals;
     const int channels=buffer.getNumChannels(), n=buffer.getNumSamples();
     if(channels<1||n<1)return;
+    std::array<double, 2> meterEnergy {{0.0, 0.0}};
+    std::array<float, 2> meterPeak {{0.0f, 0.0f}};
     const int wanted=juce::jlimit(0,3,static_cast<int>(p("mode")));
     modeFader.setTarget(wanted);
     depthSmooth.setTargetValue(p("depth")*.01f);
@@ -221,9 +236,16 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
                 {
                     const float vp=breeze::dsp::Lfo::sample(phase+phaseOffset,wave,rateHz/sr);
                     if(needsVibrato)
-                        modeOut[0][ch]=vibratoDelay.read(ch,(4.0+3.0*d*vp)*sr*.001);
+                    {
+                        const float delayMs = vibratoMotion[static_cast<size_t>(ch)]
+                            .tick(4.0f + 3.0f*d*vp);
+                        modeOut[0][ch] = vibratoDelay.read(ch, delayMs*sr*.001);
+                    }
                     if(needsTremolo)
-                        modeOut[2][ch]=input[ch]*(1.0f-d*(0.5f+0.5f*vp));
+                    {
+                        const float shape = tremoloMotion[static_cast<size_t>(ch)].tick(vp);
+                        modeOut[2][ch] = input[ch]*(1.0f-d*(0.5f+0.5f*shape));
+                    }
                 }
                 if(needsChorus)
                 {
@@ -232,7 +254,8 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
                     {
                         const float vo=breeze::dsp::Lfo::sample(
                             phase+static_cast<float>(k)/3.0f+phaseOffset,wave,rateHz/sr);
-                        const double ms=12.0+k*4.0+4.0*d*vo;
+                        const float ms=chorusMotion[static_cast<size_t>(ch)]
+                            [static_cast<size_t>(k)].tick(12.0f+k*4.0f+4.0f*d*vo);
                         const float w=chorusGains[static_cast<size_t>(ch)]
                             [static_cast<size_t>(k)].getNextValue();
                         sum+=chorusDelay.read(ch,ms*sr*.001)*w;
@@ -262,11 +285,25 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
                     dryValue+=alignedDry*weight;
                 }
                 const float mixed=dryValue*dryGain+wetValue*wetGain;
-                buffer.setSample(ch,sample,dryNormal[ch]+power*(mixed-dryNormal[ch]));
+                const float output=dryNormal[ch]+power*(mixed-dryNormal[ch]);
+                buffer.setSample(ch,sample,output);
+                const float magnitude=std::abs(output);
+                meterPeak[static_cast<size_t>(ch)]=juce::jmax(meterPeak[static_cast<size_t>(ch)],magnitude);
+                meterEnergy[static_cast<size_t>(ch)]+=static_cast<double>(output)*output;
             }
             dryDelay.advance();vibratoDelay.advance();chorusDelay.advance();
         }
     }
+    for(int ch=0; ch<2; ++ch)
+    {
+        const int source=juce::jmin(ch,channels-1);
+        displayRms[static_cast<size_t>(ch)].store(
+            static_cast<float>(std::sqrt(meterEnergy[static_cast<size_t>(source)] / n)),
+            std::memory_order_relaxed);
+        displayPeak[static_cast<size_t>(ch)].store(
+            meterPeak[static_cast<size_t>(source)],std::memory_order_relaxed);
+    }
+    meterFrame.fetch_add(1, std::memory_order_release);
     lfoPhase.store(static_cast<float>(lfo.getPhase()),std::memory_order_relaxed);
     displayRate.store(static_cast<float>(lfo.getCurrentFrequency()),std::memory_order_relaxed);
 }

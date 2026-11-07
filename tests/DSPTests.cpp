@@ -9,6 +9,7 @@
 
 namespace
 {
+constexpr int kAutomationSamples = 4096;
 int errors = 0;
 void check(bool ok, const char* what)
 {
@@ -108,14 +109,13 @@ void testVariableBlocksAndSaturationAutomation()
 {
     // The 30 ms saturation ramp must be independent of callback block size.
     // All switch points are multiples of 256 and 64 samples.
-    constexpr int total=4096;
     auto render=[](int blockSize)
     {
         breeze::dsp::Saturator sat;
         sat.prepare(48000.0,256,0.0f);
         juce::AudioBuffer<float> audio(2,256);
-        std::array<float,total> output {};
-        for (int offset=0;offset<total;offset+=blockSize)
+        std::array<float,kAutomationSamples> output {};
+        for (int offset=0;offset<kAutomationSamples;offset+=blockSize)
         {
             for(int i=0;i<blockSize;++i)
             {
@@ -132,7 +132,7 @@ void testVariableBlocksAndSaturationAutomation()
     };
     const auto small=render(64),large=render(256);
     float maxError=0.0f;
-    for(int i=0;i<total;++i)
+    for(int i=0;i<kAutomationSamples;++i)
     {
         if(!std::isfinite(small[static_cast<size_t>(i)])
             ||!std::isfinite(large[static_cast<size_t>(i)]))

@@ -1,3 +1,54 @@
+# BreezeMod v1.4 — Modulation motion + UI polish (November 6, 2026)
+
+**Built on v1.3** and preserves the same manufacturer/plugin identifiers and 11
+APVTS parameter IDs, so existing host automation and saved parameters remain
+compatible. This package includes source and original PNG assets, not a compiled
+binary. The static preview is a *layout approximation*, not a host screenshot.
+
+## New in v1.4
+
+- **Smooth LFO edges**: new allocation-free `ModulationSmoother` with its
+  coefficient calculated once per sample rate. Vibrato and chorus glide their
+  fractional delay read heads over 1.5–2 ms; square/saw tremolo gains glide
+  over 1.4 ms, and rotary horn/drum motion is smoothed over 2–3 ms. The change
+  reduces abrupt read-head jumps and modulation zippering; it does not
+  guarantee removal of all artifacts at extreme settings.
+- **Rotary efficiency**: simple wrap logic replaces per-sample `fmod` for rotor
+  phase; rotary inertia remains separate for the horn and drum.
+- **Live stereo output meter**: two compact signal columns with RMS levels,
+  peak indicators, and clip hold. Values come from lock-free atomics published
+  by the audio thread. Readings decay to silence if the host stops processing.
+- **Mode/status panel**: current mode, effect description, waveform, host/free
+  clock status, and live rate, drawn as vector UI rather than external assets.
+- **Clearer interaction**: Depth slider shows its actual value and accent
+  track; the preset name gains an asterisk after editing sound parameters; the
+  fan-animation toggle displays pause/play appropriately.
+- **Smaller window**: new default 765 × 787 (~20% smaller in width/height),
+  while respecting the original 956:984 aspect ratio and allowing resize.
+  Previously saved window sizes continue to restore.
+
+## Validation and known limitations
+
+- 8 Python source/asset consistency tests pass.
+- 23 portable DSP control tests pass with GCC C++17; also run with
+  AddressSanitizer and UndefinedBehaviorSanitizer.
+- JUCE-based DSP smoke tests are included in CMake/CI but cannot run here
+  without the JUCE SDK. **No full VST3/Standalone build or DAW test has been
+  verified locally.** Run the Windows GitHub Actions workflow and test the
+  resulting plugin in FL Studio, especially automation and preset recall.
+- The new smoothing may soften intentionally sharp square/saw movement; it
+  trades hard-edged modulation for lower transient artifacts.
+
+---
+
+## v1.3.0 — Windows MSVC build unblock
+- Fixed MSVC C2131 when `juce::Rectangle<float>` was declared `constexpr` in `Source/ui/Theme.h`.
+- Applied C++17 `inline const` for shared visual rectangles (and inline colors).
+- Replaced warning-prone image draw coordinates with floating-point rectangles.
+- Removed ChromeKnob tooltip float-to-int implicit conversions and made LFO sine narrowing explicit.
+- Added a regression guard to offline source tests for this compiler issue.
+- Full Windows build remains unverified until GitHub Actions completes.
+
 # BreezeMod changelog
 
 ## v1.2.0 — 2026-10-21

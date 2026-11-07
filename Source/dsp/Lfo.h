@@ -56,7 +56,7 @@ public:
                 const double dt = juce::jlimit(0.0000001, 0.49, phaseStep);
                 return static_cast<float>(2.0 * p - 1.0 - polyBlep(p, dt));
             }
-            default: return std::sin(juce::MathConstants<double>::twoPi * p);
+            default: return static_cast<float>(std::sin(juce::MathConstants<double>::twoPi * p));
         }
     }
 private:

@@ -2,8 +2,10 @@
 #include <JuceHeader.h>
 #include <array>
 #include <atomic>
+#include <cstdint>
 #include "dsp/Lfo.h"
 #include "dsp/ModulationMath.h"
+#include "dsp/ModulationSmoother.h"
 #include "dsp/ModDelay.h"
 #include "dsp/RotarySim.h"
 #include "dsp/Saturator.h"
@@ -36,11 +38,18 @@ public:
     std::atomic<float> lfoPhase {0.0f};
     std::atomic<float> displayRate {0.0f};
     std::atomic<float> displayBpm {120.0f};
+    // Lock-free UI telemetry: never read an AudioBuffer from the message thread.
+    std::array<std::atomic<float>, 2> displayRms {{0.0f, 0.0f}};
+    std::array<std::atomic<float>, 2> displayPeak {{0.0f, 0.0f}};
+    std::atomic<uint64_t> meterFrame {0};
     void loadFactoryPreset(int index);
 private:
     breeze::dsp::Lfo lfo;
     breeze::dsp::ModDelay vibratoDelay, chorusDelay, dryDelay;
     breeze::dsp::RotarySim rotary;
+    std::array<breeze::dsp::ModulationSmoother, 2> vibratoMotion;
+    std::array<std::array<breeze::dsp::ModulationSmoother, 3>, 2> chorusMotion;
+    std::array<breeze::dsp::ModulationSmoother, 2> tremoloMotion;
     breeze::dsp::Saturator saturation;
     juce::AudioBuffer<float> original, processed;
     double sr = 44100.0;

@@ -1,8 +1,10 @@
 #include "../Source/dsp/ModulationMath.h"
+#include "../Source/dsp/ModulationSmoother.h"
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <random>
+#include <limits>
 
 namespace
 {
@@ -43,6 +45,33 @@ void dryTests()
     check(vibratoDryAtMix(0.5f,1.0f,-5.0f)==0.5f,
           "Vibrato dry law clamps invalid negative mix");
 }
+void smoothingTests()
+{
+    breeze::dsp::ModulationSmoother smoother;
+    smoother.prepare(48000.0, 2.0, 12.0f);
+    float previous=12.0f;
+    bool finite=true, monotone=true, bounded=true;
+    for(int i=0;i<500;++i)
+    {
+        const float x=smoother.tick(20.0f);
+        finite &= std::isfinite(x);
+        monotone &= x>=previous;
+        bounded &= x<=20.0f && (x-previous)<0.09f;
+        previous=x;
+    }
+    check(finite && monotone && bounded,
+          "delay glide is finite and click-limited at 48 kHz");
+    check(std::abs(smoother.value()-20.0f)<0.06f,
+          "two-millisecond smoother settles to target");
+    smoother.reset(-0.25f);
+    check(smoother.value()==-0.25f,"motion state resets deterministically");
+    const float nan=std::numeric_limits<float>::quiet_NaN();
+    check(std::isfinite(smoother.tick(nan)),"non-finite modulation target is rejected");
+    smoother.prepare(8000.0, 0.0, 0.0f);
+    for(int i=0;i<1000;++i)smoother.tick(i%2==0?1.0f:-1.0f);
+    check(std::isfinite(smoother.value()),"motion smoothing stable at minimum sample rate");
+}
+
 void modeTests()
 {
     breeze::dsp::ModeFader fade;
@@ -102,7 +131,7 @@ void modeTests()
 }
 int main()
 {
-    tempoTests();dryTests();modeTests();
+    tempoTests();dryTests();modeTests();smoothingTests();
     std::cout << (errors==0?"All portable DSP tests passed\n":"Portable tests failed\n");
     return errors==0?0:1;
 }

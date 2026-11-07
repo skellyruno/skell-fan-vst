@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(BreezeMod VERSION 1.2.0 LANGUAGES C CXX)
+project(BreezeMod VERSION 1.4.0 LANGUAGES C CXX)
 
 # Retain the exact JUCE acquisition strategy of the supplied compiled StopDial template.
 include(FetchContent)
@@ -38,7 +38,7 @@ juce_add_binary_data(BreezeModAssets SOURCES
 target_sources(BreezeMod PRIVATE
     Source/PluginProcessor.h Source/PluginProcessor.cpp
     Source/PluginEditor.h Source/PluginEditor.cpp
-    Source/dsp/Lfo.h Source/dsp/ModulationMath.h Source/dsp/ModDelay.h
+    Source/dsp/Lfo.h Source/dsp/ModulationMath.h Source/dsp/ModulationSmoother.h Source/dsp/ModDelay.h
     Source/dsp/Saturator.h Source/dsp/RotarySim.h
     Source/ui/Theme.h Source/ui/LookAndFeel.h Source/ui/LookAndFeel.cpp
     Source/ui/FanView.h Source/ui/FanView.cpp
@@ -47,7 +47,8 @@ target_sources(BreezeMod PRIVATE
     Source/ui/KeyButton.h Source/ui/KeyButton.cpp
     Source/ui/TopBar.h Source/ui/TopBar.cpp
     Source/ui/PresetBar.h Source/ui/PresetBar.cpp
-    Source/ui/LfoScope.h Source/ui/LfoScope.cpp)
+    Source/ui/LfoScope.h Source/ui/LfoScope.cpp
+    Source/ui/StatusPanels.h Source/ui/StatusPanels.cpp)
 
 target_compile_features(BreezeMod PRIVATE cxx_std_17)
 target_compile_definitions(BreezeMod PRIVATE

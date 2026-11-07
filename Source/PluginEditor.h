@@ -10,6 +10,7 @@
 #include "ui/ChromeKnob.h"
 #include "ui/KeyButton.h"
 #include "ui/LfoScope.h"
+#include "ui/StatusPanels.h"
 
 class BreezeModAudioProcessorEditor final : public juce::AudioProcessorEditor,private juce::Timer
 {
@@ -51,6 +52,8 @@ private:
     juce::TextButton fanSwitch;
     LfoScope scope;
     RateReadout rateReadout;
+    LiveMeter outputMeter;
+    ModeInfo modeInfo;
     std::array<std::unique_ptr<KeyButton>,4> modeKeys;
     std::array<std::unique_ptr<KeyButton>,2> syncKeys;
     std::array<std::unique_ptr<KeyButton>,3> noteKeys;

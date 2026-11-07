@@ -55,5 +55,33 @@ for x in [769,921]:
  d.line((x,7,x-7,21),fill=(232,235,236,255),width=3)
 d.rounded_rectangle((361,942,588,977),10,fill=(222,221,218,235))
 txt(475,953,'B R E E Z E M O D',22,(30,34,39,255),center=True)
-bg.convert('RGB').save(r/'BreezeMod-layout-preview.jpg',quality=92)
+# v1.4's compact, vector-rendered live panels. This PNG is a layout concept,
+# not a capture of the JUCE plugin in a host.
+for x1,y1,x2,y2 in [(25,743,141,926),(778,743,933,926)]:
+ d.rounded_rectangle((x1,y1,x2,y2),12,fill=(12,22,30,255),outline=(52,84,101,255),width=2)
+ d.line((x1+12,y1+29,x2-12,y1+29),fill=(41,67,83,255),width=1)
+txt(83,751,'OUTPUT',14,(202,232,247,255),center=True)
+for j,x in enumerate([51,94]):
+ txt(x+12,772,'L' if j==0 else 'R',12,(170,192,209,255),center=True)
+ for i in range(21):
+  y=787+(20-i)*5
+  on=i<(14 if j==0 else 17)
+  c=((235,103,90,255) if i>=19 else (235,198,101,255) if i>=16 else (60,180,233,255))
+  if not on:c=(c[0]//7,c[1]//7,c[2]//7,255)
+  d.rounded_rectangle((x,y,x+24,y+4),1,fill=c)
+ d.rounded_rectangle((x+5,897,x+19,902),2,fill=(50,65,73,255))
+txt(83,913,'−54      0 dB',9,(105,150,174,255),center=True)
+txt(856,751,'MODULATION',12,(186,211,226,255),center=True)
+txt(855,790,'CHORUS',19,(104,197,232,255),center=True)
+txt(855,817,'3-VOICE SPREAD',11,(172,191,202,255),center=True)
+d.line((793,837,917,837),fill=(42,72,89,255),width=1)
+txt(793,846,'WAVE',11,(155,173,192,255),b=False)
+txt(918,846,'SINE',11,(203,230,246,255),b=False)
+txt(793,868,'CLOCK',11,(155,173,192,255),b=False)
+txt(918,868,'FREE',11,(203,230,246,255),b=False)
+d.line((793,887,917,887),fill=(42,72,89,255),width=1)
+txt(855,901,'3.00 Hz',13,(206,238,247,255),center=True)
+d.rounded_rectangle((476,907,715,931),6,fill=(16,28,39,255),outline=(54,137,167,255),width=1)
+txt(595,916,'MANUAL  ·  3.00 Hz',12,(215,243,250,255),center=True)
+bg.convert('RGB').save(r/'BreezeMod-layout-preview.jpg',quality=93)
 print('Preview created')

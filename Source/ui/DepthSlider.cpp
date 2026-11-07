@@ -15,7 +15,8 @@ void DepthSlider::paint(juce::Graphics& g)
     const float cy=b.getCentreY()+9.0f;
     g.setColour(Theme::label);
     g.setFont(Theme::font(15.0f,true));
-    g.drawText("DEPTH",0,0,getWidth(),22,juce::Justification::centred);
+    g.drawText("DEPTH  " + juce::String(juce::roundToInt(getValue())) + "%",
+               0,0,getWidth(),22,juce::Justification::centred);
     g.setColour(juce::Colour(0xff63676c));
     g.drawLine(11,cy,b.getRight()-11,cy,3.0f);
     const int width=juce::jmax(1,getWidth()-22);
@@ -28,6 +29,8 @@ void DepthSlider::paint(juce::Graphics& g)
     }
     const float xp=juce::jmap(static_cast<float>(valueToProportionOfLength(getValue())),
                              11.0f,b.getRight()-11.0f);
+    g.setColour(juce::Colour(0xff2584b3).withAlpha(0.65f));
+    g.drawLine(11.0f,cy,xp,cy,2.6f);
     g.setColour(juce::Colours::black.withAlpha(0.5f));
     g.fillRoundedRectangle(xp-8,cy-20,19,35,4.0f);
     juce::ColourGradient gr(juce::Colour(0xfff6fafb),xp-8,cy,juce::Colour(0xff8c989f),xp+8,cy,false);
