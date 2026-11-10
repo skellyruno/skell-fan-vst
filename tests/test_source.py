@@ -132,6 +132,22 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('(db + 54.0f)/54.0f', meter)
         self.assertIn('visibilityChanged()', scope)
 
+    def test_min_size_labels_are_not_font_dependent(self):
+        editor=(ROOT / 'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        preset=(ROOT / 'Source/ui/PresetBar.cpp').read_text(encoding='utf-8')
+        top=(ROOT / 'Source/ui/TopBar.cpp').read_text(encoding='utf-8')
+        depth=(ROOT / 'Source/ui/DepthSlider.cpp').read_text(encoding='utf-8')
+        for symbol in ('♩', '∿', '∧', '⊓', '⌁', 'Ⅱ', '▶', ' · '):
+            self.assertNotIn(symbol,editor)
+        for symbol in ('▲', '▼', '▣', '▤', '⤨'):
+            self.assertNotIn(symbol,preset)
+        for short in ('"VIB"', '"ROT"', '"TRM"', '"CHO"'):
+            self.assertIn(short,editor)
+        self.assertIn('const char* notes[]={"S","D","T"}',editor)
+        self.assertIn('place(saturation,648,624,57,70)',editor)
+        self.assertIn('cy=b.getCentreY()+13.0f',depth)
+        self.assertIn('"DRY / WET"',top)
+
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')
         self.assertIn('initProcessing', sat)

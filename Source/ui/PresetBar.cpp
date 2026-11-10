@@ -19,13 +19,13 @@ PresetBar::PresetBar(BreezeModAudioProcessor& proc):p(proc)
         b->setColour(juce::TextButton::textColourOffId,juce::Colour(0xffedf1f5));
         b->setMouseCursor(juce::MouseCursor::PointingHandCursor);
     }
-    prev.setButtonText("▲");next.setButtonText("▼");
+    prev.setButtonText("^");next.setButtonText("v");
     prev.setTooltip("Previous factory preset");
     next.setTooltip("Next factory preset");
     save.setTooltip("Save a user preset");
     remove.setTooltip("Delete the current user preset");
     shuffle.setTooltip("Randomize sound settings (unsaved)");
-    save.setButtonText("▣");remove.setButtonText("▤");shuffle.setButtonText("⤨");
+    save.setButtonText("S");remove.setButtonText("X");shuffle.setButtonText("R");
     current.onClick=[this]{popupMenu();};
     prev.onClick=[this]{chooseFactory((factoryIndex+presetCount-1)%presetCount);};
     next.onClick=[this]{chooseFactory((factoryIndex+1)%presetCount);};

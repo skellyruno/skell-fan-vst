@@ -67,8 +67,8 @@ void TopBar::paint(juce::Graphics& g)
     g.drawVerticalLine(235,13.0f,47.0f);
     g.setColour(Theme::muted);
     g.setFont(Theme::font(15.0f,true));
-    g.drawText("W I D T H",680,11,74,40,juce::Justification::centred);
-    g.drawText("D R Y / W E T",802,11,92,40,juce::Justification::centred);
+    g.drawText("WIDTH",680,11,74,40,juce::Justification::centred);
+    g.drawText("DRY / WET",802,11,92,40,juce::Justification::centred);
 }
 void TopBar::resized()
 {

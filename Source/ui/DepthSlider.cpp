@@ -14,7 +14,7 @@ DepthSlider::DepthSlider(BreezeModAudioProcessor& p)
 void DepthSlider::paint(juce::Graphics& g)
 {
     const auto b=getLocalBounds().toFloat();
-    const float cy=b.getCentreY()+9.0f;
+    const float cy=b.getCentreY()+13.0f;
     g.setColour(Theme::label);
     g.setFont(Theme::font(15.0f,true));
     g.drawText("DEPTH  " + juce::String(juce::roundToInt(getValue())) + "%",
