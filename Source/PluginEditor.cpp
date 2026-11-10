@@ -103,7 +103,7 @@ void BreezeModAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
 BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProcessor& p)
     :AudioProcessorEditor(&p),plate(p),processor(p),fan(p),top(p),presets(p),depth(p),
      rate(p,"rate","RATE"),syncRate(p,"syncDiv","RATE"),wave(p,"wave","WAVE"),
-     saturation(p,"saturation","SATURATION",true,true),scope(p),rateReadout(p),
+     saturation(p,"saturation","",true,true),scope(p),rateReadout(p),
      outputMeter(p),modeInfo(p)
 {
     setLookAndFeel(&theme);
