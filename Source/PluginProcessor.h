@@ -59,8 +59,7 @@ private:
     double lastPPQ = 0.0, lastHostBpm = 120.0;
     int lastBlockSamples = 0, lastSyncDivision = -1, lastNoteType = -1;
     juce::SmoothedValue<float,juce::ValueSmoothingTypes::Linear>
-        depthSmooth, widthSmooth, mixSmooth, powerSmooth,
-        dryGainSmooth, wetGainSmooth;
+        depthSmooth, widthSmooth, mixSmooth, powerSmooth;
     std::array<std::array<juce::SmoothedValue<float,
         juce::ValueSmoothingTypes::Linear>,3>,2> chorusGains;
     float p(const char* id) const noexcept

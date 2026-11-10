@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(BreezeMod VERSION 1.5.0 LANGUAGES C CXX)
+project(BreezeMod VERSION 1.6.0 LANGUAGES C CXX)
 
 # Retain the exact JUCE acquisition strategy of the supplied compiled StopDial template.
 include(FetchContent)

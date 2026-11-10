@@ -9,7 +9,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Source consistency checks
         run: python tests/test_source.py
       - name: Configure
@@ -29,7 +29,7 @@ jobs:
           Copy-Item -Recurse $vst.FullName package/
           if ($standalone) { Copy-Item $standalone.FullName package/ }
           Compress-Archive package/* BreezeMod-Windows.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           retention-days: 1
           name: BreezeMod-Windows

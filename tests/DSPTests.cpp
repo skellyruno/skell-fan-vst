@@ -59,6 +59,22 @@ void testDelay()
     delay.clear();
     check(std::abs(delay.read(0,7.25))<1.0e-8f,"Reset clears delay feedback/history");
 }
+void testDelayPeakBound()
+{
+    breeze::dsp::ModDelay delay;
+    delay.prepare(48000.0, 30.0);
+    const float pattern[] = {-1.0f, 1.0f, 1.0f, -1.0f};
+    bool finiteAndBounded=true;
+    for (int n=0;n<20000;++n)
+    {
+        delay.write(0,pattern[n % 4]);
+        const float out=delay.read(0,6.5);
+        finiteAndBounded &= std::isfinite(out) && std::abs(out)<=1.000001f;
+        delay.advance();
+    }
+    check(finiteAndBounded,"Hermite interpolator avoids transient peak overshoot");
+}
+
 void testSaturation()
 {
     breeze::dsp::Saturator sat;
@@ -160,7 +176,7 @@ void testRotary()
 }
 int main()
 {
-    testLfo();testDelay();testSaturation();
+    testLfo();testDelay();testDelayPeakBound();testSaturation();
     testVariableBlocksAndSaturationAutomation();testRotary();
     std::cout << (errors==0?"All DSP smoke tests passed\n":"DSP smoke tests failed\n");
     return errors==0?0:1;

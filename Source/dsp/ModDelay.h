@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include <cmath>
+#include "ModulationMath.h"
 
 namespace breeze::dsp
 {
@@ -31,10 +32,7 @@ public:
             return buffer.getSample(channel, j);
         };
         const float a = get(i-1), b = get(i), c = get(i+1), d = get(i+2);
-        const float c1 = (c-a)*0.5f;
-        const float c2 = a-2.5f*b+2.0f*c-0.5f*d;
-        const float c3 = (d-a)*0.5f+1.5f*(b-c);
-        return ((c3*f+c2)*f+c1)*f+b;
+        return boundedCubicHermite(a,b,c,d,f);
     }
 private:
     double wrap(double x) const noexcept
