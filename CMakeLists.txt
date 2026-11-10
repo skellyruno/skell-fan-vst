@@ -75,7 +75,7 @@ if(BREEZEMOD_BUILD_TESTS)
     juce_generate_juce_header(BreezeModUiTests)
     target_sources(BreezeModUiTests PRIVATE tests/UITests.cpp)
     target_compile_features(BreezeModUiTests PRIVATE cxx_std_17)
-    target_compile_definitions(BreezeModUiTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+    target_compile_definitions(BreezeModUiTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=1)
     # The test's generated JuceHeader.h includes BinaryData.h. Expose the
     # actual JUCE asset target directly; BreezeMod links it privately.
     target_link_libraries(BreezeModUiTests PRIVATE BreezeMod BreezeModAssets
