@@ -8,5 +8,7 @@ public:
     void paint(juce::Graphics&) override;
 private:
     void timerCallback() override { repaint(); }
+    void visibilityChanged() override
+    { if (isVisible()) startTimerHz(30); else stopTimer(); }
     BreezeModAudioProcessor& p;
 };

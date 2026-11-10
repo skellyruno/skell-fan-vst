@@ -21,6 +21,28 @@ inline double hostCycleBeats(int division, int noteType) noexcept
     return straight * (noteType == 1 ? 1.5 : noteType == 2 ? 2.0 / 3.0 : 1.0);
 }
 
+// Correlated dry and wet paths must not receive an equal-power +3 dB boost.
+// Interpolation is unity when paths are identical and cannot exceed either endpoint.
+inline float dryWetLinear(float dry, float wet, float mix) noexcept
+{
+    const float t = std::clamp(std::isfinite(mix) ? mix : 0.0f, 0.0f, 1.0f);
+    return dry + t * (wet - dry);
+}
+
+// Plain Catmull-Rom/Hermite can peak at 1.25 on {-1,1,1,-1} input.
+// Bound the cubic by its adjacent samples to avoid synthesized peak overloads.
+// Double intermediates protect the finite-float extreme test from overflow.
+inline float boundedCubicHermite(float a, float b, float c, float d, float phase) noexcept
+{
+    const double t = std::clamp(static_cast<double>(phase), 0.0, 1.0);
+    const double aa=a, bb=b, cc=c, dd=d;
+    const double c1=(cc-aa)*0.5;
+    const double c2=aa-2.5*bb+2.0*cc-0.5*dd;
+    const double c3=(dd-aa)*0.5+1.5*(bb-cc);
+    const double v=((c3*t+c2)*t+c1)*t+bb;
+    return static_cast<float>(std::clamp(v, std::min(bb,cc), std::max(bb,cc)));
+}
+
 inline float vibratoDryAtMix(float normal, float compensated, float mix) noexcept
 {
     // Blend dry time alignment only when the vibrato effect is heard.

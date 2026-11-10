@@ -1,5 +1,6 @@
 #include "../Source/dsp/ModulationMath.h"
 #include "../Source/dsp/ModulationSmoother.h"
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -45,6 +46,44 @@ void inputSafetyTests()
           "finite audio stays unchanged, even above 0 dBFS");
     check(sanitizeAudioSample(0.0f)==0.0f && sanitizeAudioSample(-0.5f)==-0.5f,
           "normal input is bit-preserved");
+}
+void mixAndInterpolationTests()
+{
+    using breeze::dsp::dryWetLinear;
+    using breeze::dsp::boundedCubicHermite;
+    bool noBoost=true, endpoints=true;
+    for(int i=0;i<=1000;++i)
+    {
+        const float mix=i/1000.0f;
+        const float same=dryWetLinear(0.85f,0.85f,mix);
+        const float opposite=dryWetLinear(0.85f,-0.85f,mix);
+        noBoost &= std::abs(same-0.85f)<1.e-6f && std::abs(opposite)<=0.850001f;
+        endpoints &= std::abs(dryWetLinear(-0.71f,0.49f,0.0f)+0.71f)<1.e-6f;
+        endpoints &= std::abs(dryWetLinear(-0.71f,0.49f,1.0f)-0.49f)<1.e-6f;
+    }
+    check(noBoost,"50% mix avoids correlated +3 dB gain boost");
+    check(endpoints,"mix endpoints retain dry and wet exactly");
+    check(dryWetLinear(0.3f,0.4f,std::numeric_limits<float>::quiet_NaN())==0.3f,
+          "invalid mix safely falls back to dry");
+    check(std::abs(boundedCubicHermite(-1,1,1,-1,0.5f)-1.0f)<1.e-7f,
+          "bounded cubic prevents 1.25x transient overshoot");
+    check(boundedCubicHermite(0.0f,-1.0f,0.4f,1.0f,0.0f)==-1.0f
+          && boundedCubicHermite(0.0f,-1.0f,0.4f,1.0f,1.0f)==0.4f,
+          "bounded cubic retains exact endpoints");
+    std::minstd_rand rng(1001);
+    bool bounded=true;
+    for(int n=0;n<30000;++n)
+    {
+        const auto randSample=[&](){return static_cast<float>(int(rng()%20001)-10000)/10000.0f;};
+        const float a=randSample(),b=randSample(),c=randSample(),d=randSample();
+        const float f=static_cast<float>(rng()%10001)/10000.0f;
+        const float y=boundedCubicHermite(a,b,c,d,f);
+        bounded &= std::isfinite(y) && y >= std::min(b,c)-1.e-6f
+                                    && y <= std::max(b,c)+1.e-6f;
+    }
+    check(bounded,"30k randomized interpolation cases are finite and bounded");
+    check(std::isfinite(boundedCubicHermite(-1.e37f,1.e37f,1.e37f,-1.e37f,0.5f)),
+          "extreme finite interpolator samples remain finite");
 }
 void dryTests()
 {
@@ -144,7 +183,7 @@ void modeTests()
 }
 int main()
 {
-    tempoTests();dryTests();modeTests();smoothingTests();inputSafetyTests();
+    tempoTests();dryTests();modeTests();smoothingTests();inputSafetyTests();mixAndInterpolationTests();
     std::cout << (errors==0?"All portable DSP tests passed\n":"Portable tests failed\n");
     return errors==0?0:1;
 }

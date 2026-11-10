@@ -50,6 +50,8 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('target_sources(BreezeModDspTests PRIVATE tests/DSPTests.cpp)', cmake)
         self.assertIn('add_executable(BreezeModPortableTests tests/PortableTests.cpp)', cmake)
         self.assertIn('add_test(NAME BreezeModPortableTests COMMAND BreezeModPortableTests)', cmake)
+        self.assertIn('add_test(NAME BreezeModUiTests COMMAND BreezeModUiTests)', cmake)
+        self.assertIn('tests/UITests.cpp', cmake)
         rotary = (ROOT / 'Source/dsp/RotarySim.h').read_text(encoding='utf-8')
         self.assertIn('bool render = true', rotary)
         self.assertIn('hornA = 1.0f - std::exp', rotary)
@@ -98,6 +100,55 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('lastPlateSync != s', editor)
         self.assertIn('if (hostSync)', editor)
         self.assertIn('inputSafetyTests()', tests)
+
+    def test_ui_resize_spacing_and_control_readouts(self):
+        editor = (ROOT / 'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        knob = (ROOT / 'Source/ui/ChromeKnob.cpp').read_text(encoding='utf-8')
+        meter = (ROOT / 'Source/ui/StatusPanels.cpp').read_text(encoding='utf-8')
+        scope = (ROOT / 'Source/ui/LfoScope.h').read_text(encoding='utf-8')
+        result = re.search(r'const float modeX\[\]=\{([^}]+)\};const float modeW\[\]=\{([^}]+)\};', editor)
+        self.assertIsNotNone(result, 'Could not inspect mode-key bounds')
+        x = [int(v.strip()) for v in result.group(1).split(',')]
+        widths = [int(v.strip()) for v in result.group(2).split(',')]
+        self.assertEqual(len(x), 4)
+        self.assertEqual(len(widths), 4)
+        for i in range(3):
+            self.assertGreaterEqual(x[i+1] - x[i] - widths[i], 3,
+                                    'Mode keys should have visible separation')
+        for win_w, win_h in ((574,590), (765,787), (956,984), (1434,1476)):
+            scale_x, scale_y = win_w / 956.0, win_h / 984.0
+            for xpos, w in zip(x, widths):
+                self.assertGreaterEqual(w * scale_x, 24.0)
+                self.assertLessEqual((xpos + w) * scale_x, win_w)
+            for bx, by, bw, bh in ((25,743,116,183),(778,743,155,183),
+                                    (476,907,239,24),(648,661,57,70)):
+                self.assertGreaterEqual(bx*scale_x, 0)
+                self.assertGreaterEqual(by*scale_y, 0)
+                self.assertLessEqual((bx+bw)*scale_x, win_w)
+                self.assertLessEqual((by+bh)*scale_y, win_h)
+        self.assertIn('if (lastPlateSync != s)', editor)
+        self.assertIn('small && name.isEmpty()', knob)
+        self.assertIn('std::strtod', knob)
+        self.assertIn('(db + 54.0f)/54.0f', meter)
+        self.assertIn('visibilityChanged()', scope)
+
+    def test_min_size_labels_are_not_font_dependent(self):
+        editor=(ROOT / 'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        preset=(ROOT / 'Source/ui/PresetBar.cpp').read_text(encoding='utf-8')
+        top=(ROOT / 'Source/ui/TopBar.cpp').read_text(encoding='utf-8')
+        depth=(ROOT / 'Source/ui/DepthSlider.cpp').read_text(encoding='utf-8')
+        for symbol in ('♩', '∿', '∧', '⊓', '⌁', 'Ⅱ', '▶', ' · '):
+            self.assertNotIn(symbol,editor)
+        for symbol in ('▲', '▼', '▣', '▤', '⤨'):
+            self.assertNotIn(symbol,preset)
+        for short in ('"VIB"', '"ROT"', '"TRM"', '"CHO"'):
+            self.assertIn(short,editor)
+        self.assertIn('const char* notes[]={"S","D","T"}',editor)
+        self.assertIn('place(saturation,648,624,57,70)',editor)
+        self.assertIn('getWidth()/203.0f,getHeight()/64.0f',depth)
+        self.assertIn('constexpr float width=203.0f, cy=45.0f',depth)
+        self.assertIn('saturation(p,"saturation","",true,true)',editor)
+        self.assertIn('"DRY / WET"',top)
 
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')

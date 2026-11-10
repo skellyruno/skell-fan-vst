@@ -9,7 +9,7 @@ float toMeter(float level) noexcept
 {
     if (!std::isfinite(level) || level <= 0.0f) return 0.0f;
     const float db = 20.0f*std::log10(level);
-    return juce::jlimit(0.0f, 1.0f, (db + 54.0f)/60.0f);
+    return juce::jlimit(0.0f, 1.0f, (db + 54.0f)/54.0f);
 }
 void frame(juce::Graphics& g, juce::Rectangle<float> r)
 {
@@ -87,7 +87,7 @@ void LiveMeter::paint(juce::Graphics& g)
     g.setFont(Theme::font(10.0f));
     g.setColour(juce::Colour(0xff6d96a9));
     g.drawText("−54",9,153,24,11,juce::Justification::left);
-    g.drawText("0 dB",74,166,31,13,juce::Justification::right);
+    g.drawText("0 dBFS",69,166,40,13,juce::Justification::right);
 }
 
 void ModeInfo::refresh()

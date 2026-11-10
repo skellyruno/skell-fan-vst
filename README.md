@@ -1,4 +1,24 @@
-# BreezeMod v1.5 — UI & audio-safety update (November 7, 2026)
+# BreezeMod v1.6 — safer modulation DSP and cleaner fan UI (November 10, 2026)
+
+Preserves all 11 APVTS parameter IDs, factory/user preset formats, and Skell
+plugin identity; designed for Windows VST3 and Standalone.
+
+## New in v1.6
+
+- Unity-preserving linear dry/wet blend prevents the +3 dB gain boost of
+  equal-power mixing when dry and wet paths are correlated (e.g. 0% Tremolo).
+- Fractional delay now bounds cubic interpolation by adjacent samples:
+  sharp transitions no longer synthesize out-of-range transient peaks.
+- Top-bar WIDTH and MIX show their percentages, the stereo meter uses 0 dBFS
+  at the top of the scale, and mode buttons have clearer spacing/labels.
+- Cached control face and selection now avoid needless component reordering.
+  Hidden LFO monitor no longer runs a 30 Hz repaint timer.
+- Numeric-entry fields reject invalid/non-finite values; buttons/knobs support
+  keyboard focus and presets have informative hover tooltips.
+- Tests include randomized interpolation, amplitude invariants, UI bounds at
+  four window sizes, and Windows oversampler latency/CPU stress measurements.
+- GitHub Actions now outputs a directly usable VST3/Standalone archive with a
+  Windows x64 bundle check and modern Node 24 action runtimes.
 
 This version preserves the original fan artwork, plugin identity, 11 automatable
 parameters and factory/user preset formats.
@@ -120,11 +140,16 @@ Fonts use the host's system sans typeface as in the original StopDial project; n
 
 ## Build validation
 
-The v1.4 VST3 and Standalone builds succeeded in Windows GitHub Actions on
-November 7, 2026. For v1.5, local testing passed 9 source checks and 26
-portable DSP checks, including sanitizer runs. The v1.5 Windows workflow must
-still be completed before release; validate preset recall, host tempo sync,
-resizing and audio quality in FL Studio after compilation.
+Windows CI confirms both v1.6 DSP and UI-polish stages build VST3 and
+Standalone, pass source checks and JUCE DSP/portable C++ suites, and produce
+x64 Windows bundle artifacts without MSVC warnings. The included JUCE
+UI/processor integration suite also exercises the actual editor, validates
+window geometry, exports PNG snapshots at four sizes, tests a clickable mode
+button and preset state roundtrip, and times each real processing mode.
+These automated checks do not substitute for FL Studio host validation or
+guarantee true-peak limiting for arbitrary input.
 
-Build VST3 and Standalone through Actions > Build BreezeMod. The workflow runs
-JUCE DSP and portable C++ tests, then publishes the Windows plugin artifact.
+Build via Actions > Build BreezeMod. The workflow runs three test suites,
+checks the Windows x64 VST3 binary, and publishes two artifacts:
+BreezeMod-Windows (direct VST3 and exe, no inner ZIP) and
+BreezeMod-UI-Snapshots (real offscreen JUCE editor renderings).

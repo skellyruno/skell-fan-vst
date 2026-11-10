@@ -36,10 +36,12 @@ void BreezeModAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     // Fine horizontal brush strokes.
     g.setColour(juce::Colours::white.withAlpha(0.06f));
     for(int y=745;y<902;y+=3)g.drawLine(235.0f,static_cast<float>(y),718.0f,static_cast<float>(y),.5f);
-    label(g,"VIBRATO",{238,885,63,20},11.0f);
-    label(g,"ROTARY",{301,885,54,20},11.0f);
-    label(g,"TREMOLO",{351,885,57,20},11.0f);
-    label(g,"CHORUS",{403,885,55,20},11.0f);
+    // Compact labels remain separated at the 574 px minimum editor width.
+    // The mode information panel retains the full effect names.
+    label(g,"VIB",{246,885,51,20},11.0f);
+    label(g,"ROT",{301,885,50,20},11.0f);
+    label(g,"TRM",{354,885,51,20},11.0f);
+    label(g,"CHO",{408,885,49,20},11.0f);
     // Read the actual sync mode: never display Hz ticks for host divisions.
     const bool hostSync = processor.apvts.getRawParameterValue("syncMode")
                               ->load(std::memory_order_relaxed) > 0.5f;
@@ -57,13 +59,12 @@ void BreezeModAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
         label(g,"0",{465,859,27,22},12);
         label(g,"32",{549,859,28,22},12);
     }
-    // Four stylised waveform glyphs around the WAVE knob.
-    g.setColour(juce::Colour(0xff30373e));
-    g.setFont(Theme::font(20));
-    g.drawText("∿",581,807,30,28,juce::Justification::centred);
-    g.drawText("∧",581,855,32,28,juce::Justification::centred);
-    g.drawText("⊓",670,807,30,28,juce::Justification::centred);
-    g.drawText("⌁",671,853,31,28,juce::Justification::centred);
+    // Platform-independent wave labels: decorative Unicode glyphs showed up
+    // as replacement characters on the Windows CI system font.
+    label(g,"SIN",{577,807,31,26},10.0f);
+    label(g,"TRI",{577,855,31,26},10.0f);
+    label(g,"SQR",{687,807,31,26},10.0f);
+    label(g,"SAW",{687,853,31,26},10.0f);
     // Original wordmark; no existing marks are drawn.
     g.setColour(juce::Colour(0xff2f3338));
     g.setFont(Theme::font(24.0f,true));
@@ -82,13 +83,13 @@ void BreezeModAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
     if(synced)
     {
         constexpr const char* divisions[]={"1/1","1/2","1/4","1/8","1/16","1/32","1/64"};
-        constexpr const char* note[]={""," · DOT"," · TRI"};
+        constexpr const char* note[]={""," DOT"," TRI"};
         text=juce::String("HOST  ")+divisions[juce::jlimit(0,6,static_cast<int>(read("syncDiv")))]
             +note[juce::jlimit(0,2,static_cast<int>(read("noteType")))]
-            +"  ·  "+juce::String(processor.displayBpm.load(std::memory_order_relaxed),0)+" BPM";
+            +" | "+juce::String(processor.displayBpm.load(std::memory_order_relaxed),0)+" BPM";
     }
     else
-        text="MANUAL  ·  "+juce::String(processor.displayRate.load(std::memory_order_relaxed),2)+" Hz";
+        text="MANUAL | "+juce::String(processor.displayRate.load(std::memory_order_relaxed),2)+" Hz";
     auto r=getLocalBounds().toFloat().reduced(1.0f);
     g.setColour(juce::Colour(0xff111a23).withAlpha(.88f));
     g.fillRoundedRectangle(r,6.0f);
@@ -102,7 +103,7 @@ void BreezeModAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
 BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProcessor& p)
     :AudioProcessorEditor(&p),plate(p),processor(p),fan(p),top(p),presets(p),depth(p),
      rate(p,"rate","RATE"),syncRate(p,"syncDiv","RATE"),wave(p,"wave","WAVE"),
-     saturation(p,"saturation","SATURATION",true,true),scope(p),rateReadout(p),
+     saturation(p,"saturation","",true,true),scope(p),rateReadout(p),
      outputMeter(p),modeInfo(p)
 {
     setLookAndFeel(&theme);
@@ -112,7 +113,7 @@ BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProce
                  static_cast<juce::Component*>(&rate),static_cast<juce::Component*>(&syncRate),
                  static_cast<juce::Component*>(&wave),static_cast<juce::Component*>(&saturation)})
         addAndMakeVisible(c);
-    fanSwitch.setButtonText("Ⅱ");
+    fanSwitch.setButtonText("||");
     fanSwitch.setTooltip("Pause the fan animation (does not affect audio)");
     fanSwitch.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff252b30));
     fanSwitch.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffeaf1f3));
@@ -122,7 +123,7 @@ BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProce
         enabled=!enabled;
         processor.apvts.state.setProperty("uiFanAnimation",enabled,nullptr);
         fan.setAnimationEnabled(enabled);
-        fanSwitch.setButtonText(enabled?"Ⅱ":"▶");
+        fanSwitch.setButtonText(enabled?"||":">");
     };
     addAndMakeVisible(fanSwitch);
     addAndMakeVisible(rateReadout);
@@ -130,7 +131,7 @@ BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProce
     addAndMakeVisible(modeInfo);
     const bool initialAnimation=static_cast<bool>(p.apvts.state.getProperty("uiFanAnimation",true));
     fan.setAnimationEnabled(initialAnimation);
-    fanSwitch.setButtonText(initialAnimation?"Ⅱ":"▶");
+    fanSwitch.setButtonText(initialAnimation?"||":">");
     scope.setVisible(static_cast<bool>(p.apvts.state.getProperty("uiScopeVisible",false)));
     addChildComponent(scope);
     top.onScope=[this]
@@ -146,22 +147,25 @@ BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProce
     {
         modeKeys[i]=std::make_unique<KeyButton>(modes[i],colours[i]);
         modeKeys[i]->onClick=[this,i]{setChoice(modeChoice,i);};
+        modeKeys[i]->setTooltip("Select "+modes[i]+" modulation");
         addAndMakeVisible(*modeKeys[i]);
         modeChoice.addItem(modes[i],i+1);
     }
     for(int i=0;i<2;++i)
     {
-        syncKeys[i]=std::make_unique<KeyButton>(i==0?"MAN":"HOST",
+        syncKeys[i]=std::make_unique<KeyButton>(i==0?"M":"H",
                    i==0?juce::Colour(0xffa9c4be):juce::Colour(0xffc9a3e8),true);
         syncKeys[i]->onClick=[this,i]{setChoice(syncChoice,i);};
+        syncKeys[i]->setTooltip(i==0?"Manual LFO rate":"Host tempo sync");
         addAndMakeVisible(*syncKeys[i]);
         syncChoice.addItem(i==0?"Manual":"Host",i+1);
     }
-    const char* notes[]={"♩","♩.","♩³"};
+    const char* notes[]={"S","D","T"};
     for(int i=0;i<3;++i)
     {
         noteKeys[i]=std::make_unique<KeyButton>(notes[i],juce::Colour(0xffd6dadd),true);
         noteKeys[i]->onClick=[this,i]{setChoice(noteChoice,i);};
+        noteKeys[i]->setTooltip(i==0?"Straight notes":i==1?"Dotted notes":"Triplet notes");
         addAndMakeVisible(*noteKeys[i]);
         noteChoice.addItem(i==0?"Straight":i==1?"Dotted":"Triplet",i+1);
     }
@@ -175,6 +179,13 @@ BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProce
     setResizable(true,true);
     setSize(static_cast<int>(p.apvts.state.getProperty("uiWidth",956)),
             static_cast<int>(p.apvts.state.getProperty("uiHeight",984)));
+    // Hide the inactive RATE dial immediately (before the first 30 Hz timer).
+    const bool hostInitiallySelected =
+        p.apvts.getRawParameterValue("syncMode")->load(std::memory_order_relaxed) > 0.5f;
+    rate.setVisible(!hostInitiallySelected);
+    syncRate.setVisible(hostInitiallySelected);
+    if (hostInitiallySelected) syncRate.toFront(false);
+    else rate.toFront(false);
     startTimerHz(30);
 }
 BreezeModAudioProcessorEditor::~BreezeModAudioProcessorEditor()
@@ -196,13 +207,13 @@ void BreezeModAudioProcessorEditor::resized()
     place(top,0,0,956,60);place(presets,242,10,420,38);
     place(fanSwitch,284,697,36,35);
     place(depth,254,739,203,64);
-    const float modeX[]={246,301,352,402};const float modeW[]={54,51,50,52};
+    const float modeX[]={246,301,354,408};const float modeW[]={51,50,51,49};
     for(int i=0;i<4;++i)place(*modeKeys[i],modeX[i],807,modeW[i],75);
     place(*syncKeys[0],485,752,36,30);place(*syncKeys[1],522,752,36,30);
     const float noteX[]={565,603,641};
     for(int i=0;i<3;++i)place(*noteKeys[i],noteX[i],752,36,30);
     place(rate,476,791,85,104);place(syncRate,476,791,85,104);
-    place(wave,601,791,85,104);place(saturation,648,661,57,70);
+    place(wave,601,791,85,104);place(saturation,648,624,57,70);
     place(scope,18,729,200,136);
     place(rateReadout,476,907,239,24);
     place(outputMeter,25,743,116,183);
@@ -225,14 +236,18 @@ void BreezeModAudioProcessorEditor::timerCallback()
         noteKeys[i]->setAlpha(s==1?1.0f:.4f);
         noteKeys[i]->setToggleState(i==t,juce::dontSendNotification);
     }
-    rate.setVisible(s==0);syncRate.setVisible(s!=0);
+    // The editor is refreshed at 30 Hz, but changing the z-order every tick
+    // causes unnecessary component invalidations. Update only on sync flips.
     if (lastPlateSync != s)
     {
         lastPlateSync = s;
-        plate.repaint(); // cached face is invalidated only when the sync mode flips
+        rate.setVisible(s==0);
+        syncRate.setVisible(s!=0);
+        if (s!=0) syncRate.toFront(false);
+        else rate.toFront(false);
+        plate.repaint(); // cached markings switch only MANUAL <-> HOST
     }
     rateReadout.repaint();
     outputMeter.refresh();
     modeInfo.refresh();
-    rate.toFront(false); if(s!=0)syncRate.toFront(false);
 }

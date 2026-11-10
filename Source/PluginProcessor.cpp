@@ -5,7 +5,6 @@
 namespace
 {
 using APVTS=juce::AudioProcessorValueTreeState;
-using PI=juce::MathConstants<float>;
 constexpr std::array<const char*,11> paramIds {
     "power","mode","depth","rate","syncMode","syncDiv","noteType",
     "wave","saturation","width","mix" };
@@ -99,8 +98,6 @@ void BreezeModAudioProcessor::prepareToPlay(double rate,int block)
     reset(widthSmooth,p("width")*.01f,.035);
     const float initialMix=juce::jlimit(0.0f,1.0f,p("mix")*.01f);
     reset(mixSmooth,initialMix,.025);
-    reset(dryGainSmooth,std::cos(initialMix*PI::halfPi),.025);
-    reset(wetGainSmooth,std::sin(initialMix*PI::halfPi),.025);
     reset(powerSmooth,p("power"),.012);
     const float initialWidth=juce::jlimit(0.0f,1.0f,p("width")*.01f);
     for(int ch=0;ch<2;++ch)
@@ -128,10 +125,6 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
     widthSmooth.setTargetValue(p("width")*.01f);
     const float mixTarget=juce::jlimit(0.0f,1.0f,p("mix")*.01f);
     mixSmooth.setTargetValue(mixTarget);
-    // Equal-power trigonometry is computed once per host block, rather than
-    // calling sin + cos at every audio sample.
-    dryGainSmooth.setTargetValue(std::cos(mixTarget*PI::halfPi));
-    wetGainSmooth.setTargetValue(std::sin(mixTarget*PI::halfPi));
     powerSmooth.setTargetValue(p("power")>0.5f?1.0f:0.0f);
     const float widthTarget=juce::jlimit(0.0f,1.0f,p("width")*.01f);
     for(int ch=0;ch<2;++ch)
@@ -221,8 +214,6 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
             const float d=depthSmooth.getNextValue();
             const float width=widthSmooth.getNextValue();
             const float wet=juce::jlimit(0.0f,1.0f,mixSmooth.getNextValue());
-            const float dryGain=dryGainSmooth.getNextValue();
-            const float wetGain=wetGainSmooth.getNextValue();
             const float power=powerSmooth.getNextValue();
             const float rateHz=static_cast<float>(lfo.getCurrentFrequency());
             float input[2]{};
@@ -291,7 +282,7 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
                         : dryNormal[ch];
                     dryValue+=alignedDry*weight;
                 }
-                const float mixed=dryValue*dryGain+wetValue*wetGain;
+                const float mixed=breeze::dsp::dryWetLinear(dryValue,wetValue,wet);
                 const float output=dryNormal[ch]+power*(mixed-dryNormal[ch]);
                 buffer.setSample(ch,sample,output);
                 const float magnitude=std::abs(output);

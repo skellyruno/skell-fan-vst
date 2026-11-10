@@ -5,6 +5,7 @@ KeyButton::KeyButton(const juce::String& name,juce::Colour c,bool small)
 {
     setClickingTogglesState(false);
     setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    setWantsKeyboardFocus(true);
 }
 void KeyButton::paintButton(juce::Graphics& g,bool hover,bool down)
 {
@@ -30,5 +31,10 @@ void KeyButton::paintButton(juce::Graphics& g,bool hover,bool down)
         g.setColour(Theme::label);
         g.setFont(Theme::font(13.0f,true));
         g.drawText(getName(),r,juce::Justification::centred);
+    }
+    if (hasKeyboardFocus(false))
+    {
+        g.setColour(Theme::cyan.withAlpha(0.9f));
+        g.drawRoundedRectangle(r.reduced(0.5f),4.0f,2.0f);
     }
 }

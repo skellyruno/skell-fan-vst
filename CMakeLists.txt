@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(BreezeMod VERSION 1.5.0 LANGUAGES C CXX)
+project(BreezeMod VERSION 1.6.0 LANGUAGES C CXX)
 
 # Retain the exact JUCE acquisition strategy of the supplied compiled StopDial template.
 include(FetchContent)
@@ -70,6 +70,19 @@ if(BREEZEMOD_BUILD_TESTS)
     target_link_libraries(BreezeModDspTests PRIVATE juce::juce_audio_utils juce::juce_dsp
         juce::juce_recommended_config_flags)
     add_test(NAME BreezeModDspTests COMMAND BreezeModDspTests)
+    # Offscreen JUCE editor snapshots and live processor-mode/preset tests.
+    juce_add_console_app(BreezeModUiTests PRODUCT_NAME "BreezeMod UI Tests")
+    juce_generate_juce_header(BreezeModUiTests)
+    target_sources(BreezeModUiTests PRIVATE tests/UITests.cpp)
+    target_compile_features(BreezeModUiTests PRIVATE cxx_std_17)
+    target_compile_definitions(BreezeModUiTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=1)
+    # The test's generated JuceHeader.h includes BinaryData.h. Expose the
+    # actual JUCE asset target directly; BreezeMod links it privately.
+    target_link_libraries(BreezeModUiTests PRIVATE BreezeMod BreezeModAssets
+        juce::juce_audio_utils juce::juce_dsp juce::juce_gui_extra
+        juce::juce_recommended_config_flags)
+    add_test(NAME BreezeModUiTests COMMAND BreezeModUiTests)
+
     add_executable(BreezeModPortableTests tests/PortableTests.cpp)
     target_compile_features(BreezeModPortableTests PRIVATE cxx_std_17)
     add_test(NAME BreezeModPortableTests COMMAND BreezeModPortableTests)

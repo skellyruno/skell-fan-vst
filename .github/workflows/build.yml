@@ -9,7 +9,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Source consistency checks
         run: python tests/test_source.py
       - name: Configure
@@ -17,20 +17,29 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel 2
       - name: DSP and portable regression tests
-        run: ctest --test-dir build -C Release --output-on-failure
+        run: ctest --test-dir build -C Release --output-on-failure -V
+      - uses: actions/upload-artifact@v6
+        with:
+          name: BreezeMod-UI-Snapshots
+          path: build/BreezeMod-ui-*.png
+          if-no-files-found: error
+          retention-days: 14
       - name: Package VST3 and Standalone
         shell: pwsh
         run: |
           $vst = Get-ChildItem build -Recurse -Directory -Filter "BreezeMod.vst3" | Select-Object -First 1
           if (-not $vst) { throw "BreezeMod.vst3 bundle not found" }
+          $binary = Join-Path $vst.FullName "Contents/x86_64-win/BreezeMod.vst3"
+          if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
+            throw "Expected Windows x64 VST3 binary missing from bundle"
+          }
           $standalone = Get-ChildItem build -Recurse -File -Filter "BreezeMod.exe" | Select-Object -First 1
           if (-not $standalone) { throw "BreezeMod.exe standalone executable not found" }
           New-Item -ItemType Directory -Path package | Out-Null
           Copy-Item -Recurse $vst.FullName package/
           if ($standalone) { Copy-Item $standalone.FullName package/ }
-          Compress-Archive package/* BreezeMod-Windows.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
-          retention-days: 1
+          retention-days: 14
           name: BreezeMod-Windows
-          path: BreezeMod-Windows.zip
+          path: package/
