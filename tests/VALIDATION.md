@@ -1,3 +1,22 @@
+# v1.6 verification matrix (November 10, 2026)
+
+- Stage 1 on Windows GitHub Actions: VST3 and Standalone compilation PASS,
+  JUCE DSP tests PASS, portable tests PASS, x64 package upload PASS,
+  MSVC warnings NONE. CI run 42818582341.
+- Portable GNU C++17 (-Wall -Wextra -Werror): PASS. Clang ASan + UBSan: PASS.
+- Mix invariants: correlated ±0.85 inputs show no dry/wet gain boost at any mix;
+  endpoints exact. Bounded interpolation prevents 1.25x transient overshoot;
+  30k randomized cases stay finite and within adjacent sample bounds.
+- UI geometry: static source checks for 574x590, 765x787, 956x984 and
+  1434x1476. These do NOT prove the actual JUCE renderer at those sizes.
+- Stage 2 Windows CI additionally measures saturation CPU fraction and
+  impulse-vs-reported latency at 44.1 / 48 / 96 kHz with drive automation.
+- Outstanding external checks: FL Studio VST3 scan/load/unload, true-peak
+  measurements against a reference meter, loudness matching, host automation
+  at high stress, GUI mouse/keyboard testing on Windows at minimum size.
+
+---
+
 # v1.4 validation (Nov 6, 2026)
 
 The 23 JUCE-independent C++ checks cover tempo divisions, click-free mode

@@ -99,6 +99,37 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('if (hostSync)', editor)
         self.assertIn('inputSafetyTests()', tests)
 
+    def test_ui_resize_spacing_and_control_readouts(self):
+        editor = (ROOT / 'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        knob = (ROOT / 'Source/ui/ChromeKnob.cpp').read_text(encoding='utf-8')
+        meter = (ROOT / 'Source/ui/StatusPanels.cpp').read_text(encoding='utf-8')
+        scope = (ROOT / 'Source/ui/LfoScope.h').read_text(encoding='utf-8')
+        result = re.search(r'const float modeX\[\]=\{([^}]+)\};const float modeW\[\]=\{([^}]+)\};', editor)
+        self.assertIsNotNone(result, 'Could not inspect mode-key bounds')
+        x = [int(v.strip()) for v in result.group(1).split(',')]
+        widths = [int(v.strip()) for v in result.group(2).split(',')]
+        self.assertEqual(len(x), 4)
+        self.assertEqual(len(widths), 4)
+        for i in range(3):
+            self.assertGreaterEqual(x[i+1] - x[i] - widths[i], 3,
+                                    'Mode keys should have visible separation')
+        for win_w, win_h in ((574,590), (765,787), (956,984), (1434,1476)):
+            scale_x, scale_y = win_w / 956.0, win_h / 984.0
+            for xpos, w in zip(x, widths):
+                self.assertGreaterEqual(w * scale_x, 24.0)
+                self.assertLessEqual((xpos + w) * scale_x, win_w)
+            for bx, by, bw, bh in ((25,743,116,183),(778,743,155,183),
+                                    (476,907,239,24),(648,661,57,70)):
+                self.assertGreaterEqual(bx*scale_x, 0)
+                self.assertGreaterEqual(by*scale_y, 0)
+                self.assertLessEqual((bx+bw)*scale_x, win_w)
+                self.assertLessEqual((by+bh)*scale_y, win_h)
+        self.assertIn('if (lastPlateSync != s)', editor)
+        self.assertIn('small && name.isEmpty()', knob)
+        self.assertIn('std::strtod', knob)
+        self.assertIn('(db + 54.0f)/54.0f', meter)
+        self.assertIn('visibilityChanged()', scope)
+
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')
         self.assertIn('initProcessing', sat)

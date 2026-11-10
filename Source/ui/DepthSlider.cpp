@@ -6,6 +6,8 @@ DepthSlider::DepthSlider(BreezeModAudioProcessor& p)
     setSliderStyle(juce::Slider::LinearHorizontal);
     setTextBoxStyle(juce::Slider::NoTextBox,true,0,0);
     setMouseCursor(juce::MouseCursor::LeftRightResizeCursor);
+    setWantsKeyboardFocus(true);
+    setTooltip("Modulation depth (double-click to reset)");
     attachment=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"depth",*this);
     setDoubleClickReturnValue(true,50.0);
 }
@@ -39,5 +41,6 @@ void DepthSlider::paint(juce::Graphics& g)
     g.setColour(juce::Colour(0xff5a6064));g.drawLine(xp,cy-19,xp,cy+8,1.5f);
 }
 void DepthSlider::mouseWheelMove(const juce::MouseEvent& e,const juce::MouseWheelDetails& w)
-{ setValue(juce::jlimit(0.0,100.0,getValue()+((w.deltaY>=0)?1.0:-1.0)),juce::sendNotificationSync);
+{ if (w.deltaY != 0.0f)
+      setValue(juce::jlimit(0.0,100.0,getValue()+(w.deltaY>0.0f?1.0:-1.0)),juce::sendNotificationSync);
   juce::ignoreUnused(e); }

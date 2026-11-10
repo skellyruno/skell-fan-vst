@@ -1,3 +1,22 @@
+# BreezeMod v1.6 — DSP correctness, performance and UI polish (November 10, 2026)
+
+- Replaced correlated equal-power dry/wet law with unity-preserving linear mix;
+  eliminated unused trigonometric gain smoothers from the audio loop.
+- Added bounded cubic fractional delay interpolation to eliminate 1.25x
+  overshoot from otherwise valid ±1.0 input sequences.
+- Expanded portable regression tests with 30,000 randomized interpolation cases,
+  extreme finite values, mix automation endpoints and peak stability.
+- Added JUCE tests for fractional-delay peak limits, oversampling impulse
+  latency, NaN/denormal safety, bounded sine peaks and per-rate CPU timing.
+- UI: always-visible top-bar percentages, 0 dBFS meter top, mode-key spacing,
+  keyboard focus, preset tooltips, numeric-entry validation and idle scope
+  timer savings. Restored HOST/MANUAL state before first editor tick.
+- Strengthened Windows workflow: Node 24 actions, VST3 x64 binary check,
+  verbose test logs and one-layer artifact packaging with longer retention.
+- Preserves the existing 11 parameter IDs and user XML preset formats.
+
+---
+
 # BreezeMod v1.5 — UI clarity and audio safety (November 7, 2026)
 
 - Fixed non-finite input propagation into persistent stereo DSP state while

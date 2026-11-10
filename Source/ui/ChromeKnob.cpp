@@ -2,6 +2,7 @@
 #include "Theme.h"
 #include <BinaryData.h>
 #include <cmath>
+#include <cstdlib>
 ChromeKnob::ChromeKnob(BreezeModAudioProcessor& p,const juce::String& id,
                       const juce::String& caption,bool miniature,bool blue)
     : name(caption),parameterId(id),small(miniature),isBlue(blue)
@@ -10,6 +11,7 @@ ChromeKnob::ChromeKnob(BreezeModAudioProcessor& p,const juce::String& id,
     setVelocityBasedMode(false);
     setTextBoxStyle(juce::Slider::NoTextBox,true,0,0);
     setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    setWantsKeyboardFocus(true);
     setRotaryParameters(juce::MathConstants<float>::pi*1.25f,
                         juce::MathConstants<float>::pi*2.75f,true);
     attachment=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,id,*this);
@@ -55,9 +57,17 @@ void ChromeKnob::mouseDown(const juce::MouseEvent& e)
                 {
                     if(r==1&&self!=nullptr)
                     {
-                        const double v=win->getTextEditorContents("value").getDoubleValue();
-                        self->setValue(juce::jlimit(self->getMinimum(),self->getMaximum(),v),
-                                       juce::sendNotificationSync);
+                        const auto valueText=win->getTextEditorContents("value").trim();
+                        const char* const begin=valueText.toRawUTF8();
+                        char* end=nullptr;
+                        const double v=std::strtod(begin,&end);
+                        if (end!=begin && *end=='\0' && std::isfinite(v))
+                            self->setValue(juce::jlimit(self->getMinimum(),self->getMaximum(),v),
+                                           juce::sendNotificationSync);
+                        else
+                            juce::AlertWindow::showMessageBoxAsync(
+                                juce::MessageBoxIconType::WarningIcon,"Invalid value",
+                                "Enter a valid finite number, for example 3.5.");
                     }
                     delete win;
                 }),false);
@@ -91,6 +101,16 @@ void ChromeKnob::paint(juce::Graphics& g)
     g.setFont(Theme::font(11.0f*scale,true));
     g.setColour(isBlue?Theme::label:Theme::label);
     g.drawText(name,area.withTop(cy+radius+1.0f*scale),juce::Justification::centredTop);
+    if (small && name.isEmpty() && !isMouseOverOrDragging())
+    {
+        // Permanent top-bar Width/Mix percentage rather than hover-only feedback.
+        g.setColour(juce::Colour(0xffcde2ed));
+        g.setFont(Theme::font(10.0f*scale,true));
+        g.drawText(juce::String(juce::roundToInt(getValue())) + "%",
+                   juce::Rectangle<float>{0.0f,cy+radius+scale,
+                                          area.getWidth(),14.0f*scale},
+                   juce::Justification::centred);
+    }
     if(isMouseOverOrDragging())
     {
         g.setColour(juce::Colours::black.withAlpha(0.72f));

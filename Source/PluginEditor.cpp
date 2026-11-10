@@ -36,10 +36,10 @@ void BreezeModAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     // Fine horizontal brush strokes.
     g.setColour(juce::Colours::white.withAlpha(0.06f));
     for(int y=745;y<902;y+=3)g.drawLine(235.0f,static_cast<float>(y),718.0f,static_cast<float>(y),.5f);
-    label(g,"VIBRATO",{238,885,63,20},11.0f);
-    label(g,"ROTARY",{301,885,54,20},11.0f);
-    label(g,"TREMOLO",{351,885,57,20},11.0f);
-    label(g,"CHORUS",{403,885,55,20},11.0f);
+    label(g,"VIBRATO",{238,885,63,20},12.0f);
+    label(g,"ROTARY",{301,885,54,20},12.0f);
+    label(g,"TREMOLO",{351,885,57,20},12.0f);
+    label(g,"CHORUS",{403,885,55,20},12.0f);
     // Read the actual sync mode: never display Hz ticks for host divisions.
     const bool hostSync = processor.apvts.getRawParameterValue("syncMode")
                               ->load(std::memory_order_relaxed) > 0.5f;
@@ -175,6 +175,13 @@ BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProce
     setResizable(true,true);
     setSize(static_cast<int>(p.apvts.state.getProperty("uiWidth",956)),
             static_cast<int>(p.apvts.state.getProperty("uiHeight",984)));
+    // Hide the inactive RATE dial immediately (before the first 30 Hz timer).
+    const bool hostInitiallySelected =
+        p.apvts.getRawParameterValue("syncMode")->load(std::memory_order_relaxed) > 0.5f;
+    rate.setVisible(!hostInitiallySelected);
+    syncRate.setVisible(hostInitiallySelected);
+    if (hostInitiallySelected) syncRate.toFront(false);
+    else rate.toFront(false);
     startTimerHz(30);
 }
 BreezeModAudioProcessorEditor::~BreezeModAudioProcessorEditor()
@@ -196,7 +203,7 @@ void BreezeModAudioProcessorEditor::resized()
     place(top,0,0,956,60);place(presets,242,10,420,38);
     place(fanSwitch,284,697,36,35);
     place(depth,254,739,203,64);
-    const float modeX[]={246,301,352,402};const float modeW[]={54,51,50,52};
+    const float modeX[]={246,301,354,408};const float modeW[]={51,50,51,49};
     for(int i=0;i<4;++i)place(*modeKeys[i],modeX[i],807,modeW[i],75);
     place(*syncKeys[0],485,752,36,30);place(*syncKeys[1],522,752,36,30);
     const float noteX[]={565,603,641};
@@ -225,14 +232,18 @@ void BreezeModAudioProcessorEditor::timerCallback()
         noteKeys[i]->setAlpha(s==1?1.0f:.4f);
         noteKeys[i]->setToggleState(i==t,juce::dontSendNotification);
     }
-    rate.setVisible(s==0);syncRate.setVisible(s!=0);
+    // The editor is refreshed at 30 Hz, but changing the z-order every tick
+    // causes unnecessary component invalidations. Update only on sync flips.
     if (lastPlateSync != s)
     {
         lastPlateSync = s;
-        plate.repaint(); // cached face is invalidated only when the sync mode flips
+        rate.setVisible(s==0);
+        syncRate.setVisible(s!=0);
+        if (s!=0) syncRate.toFront(false);
+        else rate.toFront(false);
+        plate.repaint(); // cached markings switch only MANUAL <-> HOST
     }
     rateReadout.repaint();
     outputMeter.refresh();
     modeInfo.refresh();
-    rate.toFront(false); if(s!=0)syncRate.toFront(false);
 }

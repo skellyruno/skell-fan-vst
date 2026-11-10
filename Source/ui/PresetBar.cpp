@@ -20,6 +20,11 @@ PresetBar::PresetBar(BreezeModAudioProcessor& proc):p(proc)
         b->setMouseCursor(juce::MouseCursor::PointingHandCursor);
     }
     prev.setButtonText("▲");next.setButtonText("▼");
+    prev.setTooltip("Previous factory preset");
+    next.setTooltip("Next factory preset");
+    save.setTooltip("Save a user preset");
+    remove.setTooltip("Delete the current user preset");
+    shuffle.setTooltip("Randomize sound settings (unsaved)");
     save.setButtonText("▣");remove.setButtonText("▤");shuffle.setButtonText("⤨");
     current.onClick=[this]{popupMenu();};
     prev.onClick=[this]{chooseFactory((factoryIndex+presetCount-1)%presetCount);};

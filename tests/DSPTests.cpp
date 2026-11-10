@@ -6,6 +6,7 @@
 #include <cmath>
 #include <array>
 #include <iostream>
+#include <chrono>
 
 namespace
 {
@@ -159,6 +160,75 @@ void testVariableBlocksAndSaturationAutomation()
     check(maxError<0.0005f,"Saturation automation is block-size invariant (64 vs 256)");
 }
 
+void testSaturationStressAndCpu()
+{
+    juce::ScopedNoDenormals guard;
+    for (const double sampleRate : {44100.0, 48000.0, 96000.0})
+    {
+        breeze::dsp::Saturator sat;
+        constexpr int blockSize=256, blocks=96;
+        sat.prepare(sampleRate,blockSize,0.0f);
+        juce::AudioBuffer<float> input(2,blockSize);
+        const int reportedLatency=sat.getLatency();
+        check(reportedLatency>=0 && reportedLatency<blockSize,
+              "Saturation reported latency is plausible");
+
+        input.clear();
+        input.setSample(0,0,0.8f);
+        input.setSample(1,0,0.8f);
+        sat.process(input,0,blockSize,0.0f);
+        int impulsePeak=0;
+        float highest=0.0f;
+        for (int n=0;n<blockSize;++n)
+        {
+            const float x=std::abs(input.getSample(0,n));
+            if (x>highest) {highest=x;impulsePeak=n;}
+        }
+        std::cout << "Impulse latency: reported=" << reportedLatency
+                  << " samples, peak=" << impulsePeak
+                  << " at " << sampleRate << " Hz\n";
+        check(highest>0.1f && std::abs(impulsePeak-reportedLatency)<=12,
+              "Oversampling impulse agrees with reported latency");
+
+        bool finite=true, withinUnity=true, noSubnormals=true;
+        double processingMs=0.0;
+        for (int block=0;block<blocks;++block)
+        {
+            for (int n=0;n<blockSize;++n)
+            {
+                const float t=static_cast<float>(block*blockSize+n)/static_cast<float>(sampleRate);
+                const float x=0.80f*std::sin(juce::MathConstants<float>::twoPi*997.0f*t);
+                input.setSample(0,n,x);
+                input.setSample(1,n,-x);
+            }
+            const float amount=block%4==0?0.0f:block%4==1?0.25f:block%4==2?0.7f:1.0f;
+            const auto begin=std::chrono::steady_clock::now();
+            sat.process(input,0,blockSize,amount);
+            processingMs += std::chrono::duration<double,std::milli>(
+                std::chrono::steady_clock::now()-begin).count();
+            for (int ch=0;ch<2;++ch)
+                for(int n=0;n<blockSize;++n)
+                {
+                    const float x=input.getSample(ch,n);
+                    finite &= std::isfinite(x);
+                    withinUnity &= std::abs(x)<1.0f;
+                    noSubnormals &= std::fpclassify(x)!=FP_SUBNORMAL;
+                }
+        }
+        const double realtimeMs=1000.0*blockSize*blocks/sampleRate;
+        const double cpuPercent=100.0*processingMs/realtimeMs;
+        std::cout << "Saturator 2x " << sampleRate << " Hz: " << processingMs
+                  << " ms processing / " << realtimeMs << " ms audio ("
+                  << cpuPercent << "% of one realtime core)\n";
+        check(finite && noSubnormals,
+              "Automated drive ramps produce finite, non-denormal output");
+        check(withinUnity,
+              "0.8-peak sine stays below 0 dBFS under drive automation");
+        check(std::isfinite(cpuPercent) && cpuPercent<90.0,
+              "Oversampled processing completes comfortably before deadline");
+    }
+}
+
 void testRotary()
 {
     breeze::dsp::RotarySim r;
@@ -177,7 +247,7 @@ void testRotary()
 int main()
 {
     testLfo();testDelay();testDelayPeakBound();testSaturation();
-    testVariableBlocksAndSaturationAutomation();testRotary();
+    testVariableBlocksAndSaturationAutomation();testSaturationStressAndCpu();testRotary();
     std::cout << (errors==0?"All DSP smoke tests passed\n":"DSP smoke tests failed\n");
     return errors==0?0:1;
 }

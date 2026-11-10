@@ -5,6 +5,7 @@ KeyButton::KeyButton(const juce::String& name,juce::Colour c,bool small)
 {
     setClickingTogglesState(false);
     setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    setWantsKeyboardFocus(true);
 }
 void KeyButton::paintButton(juce::Graphics& g,bool hover,bool down)
 {

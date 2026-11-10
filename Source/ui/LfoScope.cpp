@@ -1,7 +1,7 @@
 #include "LfoScope.h"
 #include "Theme.h"
 LfoScope::LfoScope(BreezeModAudioProcessor& processor):p(processor)
-{setInterceptsMouseClicks(false,false);startTimerHz(30);}
+{setInterceptsMouseClicks(false,false);}
 void LfoScope::paint(juce::Graphics& g)
 {
     auto r=getLocalBounds().toFloat();
