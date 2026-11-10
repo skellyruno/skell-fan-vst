@@ -9,8 +9,14 @@
   30k randomized cases stay finite and within adjacent sample bounds.
 - UI geometry: static source checks for 574x590, 765x787, 956x984 and
   1434x1476. These do NOT prove the actual JUCE renderer at those sizes.
-- Stage 2 Windows CI additionally measures saturation CPU fraction and
-  impulse-vs-reported latency at 44.1 / 48 / 96 kHz with drive automation.
+- Stage 2 Windows CI (42820510227): VST3 + Standalone, Windows x64 packaging,
+  JUCE DSP and portable regressions PASS. Reported saturation latency 4 samples;
+  measured impulse peak at sample 5 for 44.1/48/96 kHz.
+- 2x oversampled saturation CPU on GitHub's Windows runner: 0.566% (44.1 kHz),
+  0.614% (48 kHz) and 1.217% (96 kHz) of real-time audio duration.
+- Stage 3 additionally runs real BreezeMod processor audio renders, four
+  offscreen JUCE editor snapshots, keyboard/mode click interaction, state
+  roundtrips, layout containment and whole-plugin CPU checks.
 - Outstanding external checks: FL Studio VST3 scan/load/unload, true-peak
   measurements against a reference meter, loudness matching, host automation
   at high stress, GUI mouse/keyboard testing on Windows at minimum size.

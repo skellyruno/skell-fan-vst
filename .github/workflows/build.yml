@@ -18,6 +18,12 @@ jobs:
         run: cmake --build build --config Release --parallel 2
       - name: DSP and portable regression tests
         run: ctest --test-dir build -C Release --output-on-failure -V
+      - uses: actions/upload-artifact@v6
+        with:
+          name: BreezeMod-UI-Snapshots
+          path: build/BreezeMod-ui-*.png
+          if-no-files-found: error
+          retention-days: 14
       - name: Package VST3 and Standalone
         shell: pwsh
         run: |

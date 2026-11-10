@@ -39,6 +39,11 @@ void DepthSlider::paint(juce::Graphics& g)
     g.setGradientFill(gr);
     g.fillRoundedRectangle(xp-6.5f,cy-22,13,32,3.0f);
     g.setColour(juce::Colour(0xff5a6064));g.drawLine(xp,cy-19,xp,cy+8,1.5f);
+    if (hasKeyboardFocus(false))
+    {
+        g.setColour(Theme::cyan);
+        g.drawRoundedRectangle(xp-9.0f,cy-24.0f,18.0f,36.0f,4.0f,1.6f);
+    }
 }
 void DepthSlider::mouseWheelMove(const juce::MouseEvent& e,const juce::MouseWheelDetails& w)
 { if (w.deltaY != 0.0f)

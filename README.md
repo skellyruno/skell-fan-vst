@@ -140,12 +140,16 @@ Fonts use the host's system sans typeface as in the original StopDial project; n
 
 ## Build validation
 
-Windows CI confirmed that the first v1.6 DSP stage builds VST3 and Standalone
-and passes the JUCE DSP and portable C++ regression suites without MSVC
-warnings. The UI polish and expanded oversampling stress tests must pass their
-own Windows run before merging. These automated results do not constitute
-FL Studio host validation or guarantee true-peak limiting for arbitrary input.
+Windows CI confirms both v1.6 DSP and UI-polish stages build VST3 and
+Standalone, pass source checks and JUCE DSP/portable C++ suites, and produce
+x64 Windows bundle artifacts without MSVC warnings. The included JUCE
+UI/processor integration suite also exercises the actual editor, validates
+window geometry, exports PNG snapshots at four sizes, tests a clickable mode
+button and preset state roundtrip, and times each real processing mode.
+These automated checks do not substitute for FL Studio host validation or
+guarantee true-peak limiting for arbitrary input.
 
-Build via Actions > Build BreezeMod. The workflow tests both modules, checks
-that the Windows x64 VST3 binary exists, then publishes an artifact containing
-BreezeMod.vst3 and BreezeMod.exe directly (without an inner ZIP).
+Build via Actions > Build BreezeMod. The workflow runs three test suites,
+checks the Windows x64 VST3 binary, and publishes two artifacts:
+BreezeMod-Windows (direct VST3 and exe, no inner ZIP) and
+BreezeMod-UI-Snapshots (real offscreen JUCE editor renderings).

@@ -50,6 +50,8 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('target_sources(BreezeModDspTests PRIVATE tests/DSPTests.cpp)', cmake)
         self.assertIn('add_executable(BreezeModPortableTests tests/PortableTests.cpp)', cmake)
         self.assertIn('add_test(NAME BreezeModPortableTests COMMAND BreezeModPortableTests)', cmake)
+        self.assertIn('add_test(NAME BreezeModUiTests COMMAND BreezeModUiTests)', cmake)
+        self.assertIn('tests/UITests.cpp', cmake)
         rotary = (ROOT / 'Source/dsp/RotarySim.h').read_text(encoding='utf-8')
         self.assertIn('bool render = true', rotary)
         self.assertIn('hornA = 1.0f - std::exp', rotary)

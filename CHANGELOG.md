@@ -14,6 +14,11 @@
 - Strengthened Windows workflow: Node 24 actions, VST3 x64 binary check,
   verbose test logs and one-layer artifact packaging with longer retention.
 - Preserves the existing 11 parameter IDs and user XML preset formats.
+- Added a Windows JUCE editor/processor integration test that renders the actual
+  574×590, 765×787, 956×984 and 1434×1476 window sizes; checks child bounds,
+  click-select of Rotary, state roundtrip, finite output/peak stability and
+  per-mode real-time CPU ratios. Snapshots are published as a CI artifact.
+- Added visible keyboard focus outlines for mode keys, knob dials and depth.
 
 ---
 

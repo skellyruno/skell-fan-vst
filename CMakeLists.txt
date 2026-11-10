@@ -70,6 +70,17 @@ if(BREEZEMOD_BUILD_TESTS)
     target_link_libraries(BreezeModDspTests PRIVATE juce::juce_audio_utils juce::juce_dsp
         juce::juce_recommended_config_flags)
     add_test(NAME BreezeModDspTests COMMAND BreezeModDspTests)
+    # Offscreen JUCE editor snapshots and live processor-mode/preset tests.
+    juce_add_console_app(BreezeModUiTests PRODUCT_NAME "BreezeMod UI Tests")
+    juce_generate_juce_header(BreezeModUiTests)
+    target_sources(BreezeModUiTests PRIVATE tests/UITests.cpp)
+    target_compile_features(BreezeModUiTests PRIVATE cxx_std_17)
+    target_compile_definitions(BreezeModUiTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+    target_link_libraries(BreezeModUiTests PRIVATE BreezeMod
+        juce::juce_audio_utils juce::juce_dsp juce::juce_gui_extra
+        juce::juce_recommended_config_flags)
+    add_test(NAME BreezeModUiTests COMMAND BreezeModUiTests)
+
     add_executable(BreezeModPortableTests tests/PortableTests.cpp)
     target_compile_features(BreezeModPortableTests PRIVATE cxx_std_17)
     add_test(NAME BreezeModPortableTests COMMAND BreezeModPortableTests)

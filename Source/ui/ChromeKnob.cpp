@@ -98,6 +98,13 @@ void ChromeKnob::paint(juce::Graphics& g)
     pointer.startNewSubPath(cx+std::sin(angle)*radius*.54f,cy-std::cos(angle)*radius*.54f);
     pointer.lineTo(cx+std::sin(angle)*radius*.84f,cy-std::cos(angle)*radius*.84f);
     g.strokePath(pointer,juce::PathStrokeType(2.5f*scale));
+    if (hasKeyboardFocus(false))
+    {
+        g.setColour(juce::Colour(0xff8adeff));
+        g.drawEllipse(cx-radius-4.5f*scale,cy-radius-4.5f*scale,
+                      2.0f*radius+9.0f*scale,2.0f*radius+9.0f*scale,
+                      2.0f*scale);
+    }
     g.setFont(Theme::font(11.0f*scale,true));
     g.setColour(isBlue?Theme::label:Theme::label);
     g.drawText(name,area.withTop(cy+radius+1.0f*scale),juce::Justification::centredTop);
