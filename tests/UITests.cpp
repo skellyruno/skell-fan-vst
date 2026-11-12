@@ -120,6 +120,12 @@ void testEditor(SkellFanAudioProcessor& processor)
               ==(skinBefore+1)%4,"Clicking shared skull cycles accent skin");
         check(processor.apvts.getRawParameterValue("depth")->load()==depthBefore,
               "Shared skull theme does not alter audio parameters");
+        // Restore the initial Neon skin so exported screenshots represent the
+        // plugin's default appearance, not the single-click Ivory test state.
+        for (int cycle=0; cycle<3; ++cycle) skullButton->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+        check(static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))
+              ==skinBefore,"SkellCore accent selection wraps back to the default");
     }
 
     const std::array<std::array<int,2>,4> sizes {{{574,590},{765,787},{956,984},{1434,1476}}};
