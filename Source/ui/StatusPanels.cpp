@@ -55,7 +55,7 @@ void LiveMeter::paint(juce::Graphics& g)
 
     // Inset calibrated scale; the previous -54 label collided with CLIP LEDs.
     g.setColour(juce::Colour(0xff476a51).withAlpha(0.5f));
-    g.drawHorizontalLine(96,31.0f,105.0f);
+    g.drawHorizontalLine(89,31.0f,105.0f);
     constexpr int segments=21;
     constexpr float top=44.0f, step=5.05f;
     for (int ch=0; ch<2; ++ch)
@@ -90,7 +90,7 @@ void LiveMeter::paint(juce::Graphics& g)
     g.setFont(Theme::font(10.0f,true));
     g.setColour(juce::Colour(0xffa5bbaa));
     g.drawText("0",8,39,22,12,juce::Justification::centredRight);
-    g.drawText("-24",4,91,26,12,juce::Justification::centredRight);
+    g.drawText("-24",4,83,26,12,juce::Justification::centredRight);
     g.drawText("-54",4,139,26,12,juce::Justification::centredRight);
     g.setColour(juce::Colour(0xff718a78));
     g.setFont(Theme::font(9.0f,true));
