@@ -243,10 +243,10 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('ghost(660.0f', fan)
         self.assertIn('ghost(469.0f', fan)
         self.assertIn('.rotated(static_cast<float>(angle))', fan)
-        self.assertIn('g.reduceClipRegion(foreground)', fan)
+        self.assertIn('g.reduceClipRegion(foregroundMask)', fan)
         self.assertIn('if (body.isValid())', fan)
         self.assertNotIn('if(hub.isValid())', fan)
-        self.assertIn('juce::Path skeletonPath', fan_h)
+        self.assertIn('juce::Path skeletonPath,foregroundMask', fan_h)
         self.assertIn('const double target=(enabled&&powerOn)', fan)
 
     def test_no_deprecated_float_helpers(self):
