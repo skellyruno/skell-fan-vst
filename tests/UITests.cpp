@@ -81,6 +81,11 @@ void testProcessing(SkellFanAudioProcessor& processor)
 
 void testEditor(SkellFanAudioProcessor& processor)
 {
+    // Start the editor from a real factory preset so the preset bar's
+    // snapshot matches its label. The preceding DSP test intentionally
+    // leaves modified values; otherwise an incorrect (*) appears in
+    // the published preview even after restoring Chorus parameters.
+    processor.loadFactoryPreset(0);
     std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
     check(editor != nullptr,"Editor created");
     if (!editor) return;
