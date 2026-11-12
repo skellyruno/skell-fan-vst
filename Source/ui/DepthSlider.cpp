@@ -38,7 +38,7 @@ void DepthSlider::paint(juce::Graphics& g)
     }
     const float xp=juce::jmap(static_cast<float>(valueToProportionOfLength(getValue())),
                              11.0f,width-11.0f);
-    g.setColour(juce::Colour(0xff2584b3).withAlpha(0.65f));
+    g.setColour(juce::Colour(0xff3bba64).withAlpha(0.65f));
     g.drawLine(11.0f,cy,xp,cy,2.6f);
     g.setColour(juce::Colours::black.withAlpha(0.5f));
     g.fillRoundedRectangle(xp-8.0f,cy-20.0f,19.0f,35.0f,4.0f);

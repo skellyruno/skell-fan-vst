@@ -4,11 +4,11 @@
 FanView::FanView(SkellFanAudioProcessor& p):processor(p)
 {
     setInterceptsMouseClicks(false,false);
-    body=Theme::image(BinaryData::fan_body_png,BinaryData::fan_body_pngSize);
-    rotor=Theme::image(BinaryData::blades_png,BinaryData::blades_pngSize);
-    blur=Theme::image(BinaryData::blades_blur_png,BinaryData::blades_blur_pngSize);
+    body=Theme::greenFanArtwork(Theme::image(BinaryData::fan_body_png,BinaryData::fan_body_pngSize));
+    rotor=Theme::greenFanArtwork(Theme::image(BinaryData::blades_png,BinaryData::blades_pngSize));
+    blur=Theme::greenFanArtwork(Theme::image(BinaryData::blades_blur_png,BinaryData::blades_blur_pngSize));
     grille=Theme::image(BinaryData::grille_png,BinaryData::grille_pngSize);
-    hub=Theme::image(BinaryData::hub_cap_png,BinaryData::hub_cap_pngSize);
+    hub=Theme::greenFanArtwork(Theme::image(BinaryData::hub_cap_png,BinaryData::hub_cap_pngSize));
     lastTime=juce::Time::getMillisecondCounterHiRes();
     startTimerHz(60);
 }

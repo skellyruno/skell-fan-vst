@@ -148,7 +148,7 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('getWidth()/203.0f,getHeight()/64.0f',depth)
         self.assertIn('constexpr float width=203.0f, cy=45.0f',depth)
         self.assertIn('saturation(p,"saturation","",true,true)',editor)
-        self.assertIn('"DRY / WET"',top)
+        self.assertIn('"DRY/WET"',top)
 
     def test_skellcore_dependency_identity_and_compatibility(self):
         cmake=(ROOT / 'CMakeLists.txt').read_text(encoding='utf-8')
@@ -170,6 +170,31 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('getChildFile("BreezeMod")',preset)
         self.assertIn('getChildFile("SkellFan")',preset)
         self.assertIn('target_sources(SkellFanCoreTests PRIVATE tests/SkellCoreIntegrationTests.cpp)',cmake)
+
+    def test_v18_fan_skull_power_and_neon_ui(self):
+        editor=(ROOT / 'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        top=(ROOT / 'Source/ui/TopBar.cpp').read_text(encoding='utf-8')
+        top_h=(ROOT / 'Source/ui/TopBar.h').read_text(encoding='utf-8')
+        fan=(ROOT / 'Source/ui/FanView.cpp').read_text(encoding='utf-8')
+        theme=(ROOT / 'Source/ui/Theme.h').read_text(encoding='utf-8')
+        lfo=(ROOT / 'Source/dsp/Lfo.h').read_text(encoding='utf-8')
+        dsp=(ROOT / 'tests/DSPTests.cpp').read_text(encoding='utf-8')
+        self.assertIn('place(skull,7,6,53,47)',top)
+        self.assertIn('place(power,905,9,43,42)',top)
+        self.assertIn('place(presets,215,10,408,38)',editor)
+        self.assertIn('SkellFan fan-skull',top_h)
+        self.assertIn('drawSkullKeyMark',top)
+        self.assertIn('title.append("SKELL"',top)
+        self.assertIn('title.append("FAN"',top)
+        self.assertIn('brand.append("SKELL"',editor)
+        self.assertIn('brand.append("FAN"',editor)
+        self.assertIn('const juce::Rectangle<float> badge',editor)
+        self.assertIn('greenFanArtwork',fan)
+        self.assertIn('greenFanArtwork',theme)
+        self.assertIn('smoothDivisionChange',lfo)
+        self.assertIn('testHostDivisionChangeGlide()',dsp)
+        self.assertNotIn('0xff1f4fd8',theme)
+        self.assertNotIn('0xff2cc4f2',theme)
 
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')

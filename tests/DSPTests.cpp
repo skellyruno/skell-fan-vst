@@ -40,6 +40,31 @@ void testLfo()
         }
     check(true,"LFO finite and bounded");
 }
+void testHostDivisionChangeGlide()
+{
+    breeze::dsp::Lfo lfo;
+    lfo.prepare(48000.0);
+    lfo.setFrequency(0.0,true);
+    lfo.lockToPPQ(0.0,1.0);
+    lfo.lockToPPQ(0.37,1.0,true);
+    double prev=lfo.getPhase();
+    double biggestStep=0.0;
+    for(int i=0;i<480;++i)
+    {
+        const double next=lfo.tick();
+        const double delta=next-prev;
+        const double wrapped=delta-std::floor(delta+0.5);
+        biggestStep=std::max(biggestStep,std::abs(wrapped));
+        prev=next;
+    }
+    check(biggestStep<0.003,"HOST division automation glides without abrupt phase jumps");
+    check(std::abs(lfo.getPhase()-0.37)<1.e-6,
+          "HOST division glide converges to beat-exact target after 10 ms");
+    lfo.lockToPPQ(0.81,1.0,false);
+    check(std::abs(lfo.getPhase()-0.81)<1.e-9,
+          "Transport seek still immediately locks to host PPQ");
+}
+
 void testDelay()
 {
     breeze::dsp::ModDelay delay;
@@ -246,7 +271,7 @@ void testRotary()
 }
 int main()
 {
-    testLfo();testDelay();testDelayPeakBound();testSaturation();
+    testLfo();testHostDivisionChangeGlide();testDelay();testDelayPeakBound();testSaturation();
     testVariableBlocksAndSaturationAutomation();testSaturationStressAndCpu();testRotary();
     std::cout << (errors==0?"All DSP smoke tests passed\n":"DSP smoke tests failed\n");
     return errors==0?0:1;

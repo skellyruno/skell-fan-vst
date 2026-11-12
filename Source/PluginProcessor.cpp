@@ -173,9 +173,13 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
         const double expected=lastPPQ
                + static_cast<double>(lastBlockSamples)*lastHostBpm/(sr*60.0);
         const bool jumped=haveLastPPQ && std::abs(ppq-expected)>0.05;
+        const bool divisionChanged=syncDiv!=lastSyncDivision
+                                   || noteType!=lastNoteType;
         if(!wasHostSynced || !wasTransportPlaying || !haveLastPPQ
-           || jumped || syncDiv!=lastSyncDivision || noteType!=lastNoteType)
-            lfo.lockToPPQ(ppq,beats);
+           || jumped || divisionChanged)
+            lfo.lockToPPQ(ppq,beats,
+                wasHostSynced && wasTransportPlaying && haveLastPPQ
+                && !jumped && divisionChanged);
     }
     haveLastPPQ=validPPQ;
     if(validPPQ)lastPPQ=ppq;
