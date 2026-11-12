@@ -168,6 +168,16 @@ void testEditor(SkellFanAudioProcessor& processor)
     check(green.getPixelAt(1,0)==gray,
           "Neutral chrome artwork remains unchanged");
 
+    // The integration test clicks ROTARY and Power above. Restore the
+    // intended startup preset before screenshots so the displayed factory
+    // name and DSP mode agree, rather than "Chorus - Classic *" / ROTARY.
+    processor.loadFactoryPreset(0);
+    juce::MessageManager::getInstance()->runDispatchLoopUntil(250);
+    check(static_cast<int>(processor.apvts.getRawParameterValue("mode")->load())==3
+          && processor.apvts.state.getProperty("uiPresetName").toString()
+                 =="Chorus - Classic",
+          "Screenshots restore the actual factory Chorus startup state");
+
     const std::array<std::array<int,2>,4> sizes {{{574,590},{765,787},{956,984},{1434,1476}}};
     juce::PNGImageFormat png;
     for(const auto& sz:sizes)
