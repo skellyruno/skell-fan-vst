@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(SkellFan VERSION 1.9.0 LANGUAGES C CXX)
+project(SkellFan VERSION 1.10.0 LANGUAGES C CXX)
 
 # Retain the exact JUCE acquisition strategy of the supplied compiled StopDial template.
 include(FetchContent)
