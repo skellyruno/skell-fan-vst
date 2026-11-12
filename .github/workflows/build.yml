@@ -1,4 +1,4 @@
-name: Build BreezeMod
+name: Build SkellFan
 on:
   workflow_dispatch:
   pull_request:
@@ -20,26 +20,26 @@ jobs:
         run: ctest --test-dir build -C Release --output-on-failure -V
       - uses: actions/upload-artifact@v6
         with:
-          name: BreezeMod-UI-Snapshots
-          path: build/BreezeMod-ui-*.png
+          name: SkellFan-UI-Snapshots
+          path: build/SkellFan-ui-*.png
           if-no-files-found: error
           retention-days: 14
       - name: Package VST3 and Standalone
         shell: pwsh
         run: |
-          $vst = Get-ChildItem build -Recurse -Directory -Filter "BreezeMod.vst3" | Select-Object -First 1
-          if (-not $vst) { throw "BreezeMod.vst3 bundle not found" }
-          $binary = Join-Path $vst.FullName "Contents/x86_64-win/BreezeMod.vst3"
+          $vst = Get-ChildItem build -Recurse -Directory -Filter "SkellFan.vst3" | Select-Object -First 1
+          if (-not $vst) { throw "SkellFan.vst3 bundle not found" }
+          $binary = Join-Path $vst.FullName "Contents/x86_64-win/SkellFan.vst3"
           if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
             throw "Expected Windows x64 VST3 binary missing from bundle"
           }
-          $standalone = Get-ChildItem build -Recurse -File -Filter "BreezeMod.exe" | Select-Object -First 1
-          if (-not $standalone) { throw "BreezeMod.exe standalone executable not found" }
+          $standalone = Get-ChildItem build -Recurse -File -Filter "SkellFan.exe" | Select-Object -First 1
+          if (-not $standalone) { throw "SkellFan.exe standalone executable not found" }
           New-Item -ItemType Directory -Path package | Out-Null
           Copy-Item -Recurse $vst.FullName package/
           if ($standalone) { Copy-Item $standalone.FullName package/ }
       - uses: actions/upload-artifact@v6
         with:
           retention-days: 14
-          name: BreezeMod-Windows
+          name: SkellFan-Windows
           path: package/

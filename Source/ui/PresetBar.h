@@ -5,7 +5,7 @@
 class PresetBar final : public juce::Component,private juce::Timer
 {
 public:
-    explicit PresetBar(BreezeModAudioProcessor&);
+    explicit PresetBar(SkellFanAudioProcessor&);
     void resized() override;
     void paint(juce::Graphics&) override;
 private:
@@ -18,8 +18,9 @@ private:
     void capturePresetSnapshot();
     bool isModified() const;
     juce::File folder() const;
+    juce::File legacyFolder() const;
     juce::String name() const;
-    BreezeModAudioProcessor& p;
+    SkellFanAudioProcessor& p;
     int factoryIndex=0;
     juce::String snapshotName;
     std::array<float, 10> snapshotValues {};

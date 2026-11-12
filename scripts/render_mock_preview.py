@@ -54,7 +54,7 @@ for x in [769,921]:
  d.ellipse((x-23,5,x+23,51),fill=(40,41,44,255),outline=(207,208,209,255),width=3)
  d.line((x,7,x-7,21),fill=(232,235,236,255),width=3)
 d.rounded_rectangle((361,942,588,977),10,fill=(222,221,218,235))
-txt(475,953,'B R E E Z E M O D',22,(30,34,39,255),center=True)
+txt(475,953,'S K E L L F A N',22,(30,34,39,255),center=True)
 # v1.4's compact, vector-rendered live panels. This PNG is a layout concept,
 # not a capture of the JUCE plugin in a host.
 for x1,y1,x2,y2 in [(25,743,141,926),(778,743,933,926)]:
@@ -83,5 +83,5 @@ d.line((793,887,917,887),fill=(42,72,89,255),width=1)
 txt(855,901,'3.00 Hz',13,(206,238,247,255),center=True)
 d.rounded_rectangle((476,907,715,931),6,fill=(16,28,39,255),outline=(54,137,167,255),width=1)
 txt(595,916,'MANUAL  ·  3.00 Hz',12,(215,243,250,255),center=True)
-bg.convert('RGB').save(r/'BreezeMod-layout-preview.jpg',quality=93)
+bg.convert('RGB').save(r/'SkellFan-layout-preview.jpg',quality=93)
 print('Preview created')

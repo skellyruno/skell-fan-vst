@@ -47,10 +47,10 @@ class SourceSanity(unittest.TestCase):
 
     def test_regression_test_targets_are_linked(self):
         cmake = (ROOT / 'CMakeLists.txt').read_text(encoding='utf-8')
-        self.assertIn('target_sources(BreezeModDspTests PRIVATE tests/DSPTests.cpp)', cmake)
-        self.assertIn('add_executable(BreezeModPortableTests tests/PortableTests.cpp)', cmake)
-        self.assertIn('add_test(NAME BreezeModPortableTests COMMAND BreezeModPortableTests)', cmake)
-        self.assertIn('add_test(NAME BreezeModUiTests COMMAND BreezeModUiTests)', cmake)
+        self.assertIn('target_sources(SkellFanDspTests PRIVATE tests/DSPTests.cpp)', cmake)
+        self.assertIn('add_executable(SkellFanPortableTests tests/PortableTests.cpp)', cmake)
+        self.assertIn('add_test(NAME SkellFanPortableTests COMMAND SkellFanPortableTests)', cmake)
+        self.assertIn('add_test(NAME SkellFanUiTests COMMAND SkellFanUiTests)', cmake)
         self.assertIn('tests/UITests.cpp', cmake)
         rotary = (ROOT / 'Source/dsp/RotarySim.h').read_text(encoding='utf-8')
         self.assertIn('bool render = true', rotary)
@@ -149,6 +149,27 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('constexpr float width=203.0f, cy=45.0f',depth)
         self.assertIn('saturation(p,"saturation","",true,true)',editor)
         self.assertIn('"DRY / WET"',top)
+
+    def test_skellcore_dependency_identity_and_compatibility(self):
+        cmake=(ROOT / 'CMakeLists.txt').read_text(encoding='utf-8')
+        processor=(ROOT / 'Source/PluginProcessor.cpp').read_text(encoding='utf-8')
+        processor_h=(ROOT / 'Source/PluginProcessor.h').read_text(encoding='utf-8')
+        top=(ROOT / 'Source/ui/TopBar.cpp').read_text(encoding='utf-8')
+        preset=(ROOT / 'Source/ui/PresetBar.cpp').read_text(encoding='utf-8')
+        self.assertIn('GIT_TAG 05191f3cfade5a57c1eb97576cce6a348705222c',cmake)
+        self.assertIn('SOURCE_SUBDIR SkellCore',cmake)
+        self.assertIn('SkellCore::DSP SkellCore::UI',cmake)
+        self.assertIn('PLUGIN_MANUFACTURER_CODE SkAu',cmake)
+        self.assertIn('PLUGIN_CODE Bz01',cmake)
+        self.assertIn('BUNDLE_ID "audio.skell.breezemod"',cmake)
+        self.assertIn('"BREEZEMOD_PARAMETERS"',processor)
+        self.assertIn('skellcore::TempoClock tempoClock',processor_h)
+        self.assertIn('tempoClock.advance(',processor)
+        self.assertIn('skellcore::ui::drawSkullKeyMark',top)
+        self.assertIn('uiSkullSkin',top)
+        self.assertIn('getChildFile("BreezeMod")',preset)
+        self.assertIn('getChildFile("SkellFan")',preset)
+        self.assertIn('target_sources(SkellFanCoreTests PRIVATE tests/SkellCoreIntegrationTests.cpp)',cmake)
 
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')

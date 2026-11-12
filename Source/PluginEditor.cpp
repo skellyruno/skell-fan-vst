@@ -10,7 +10,7 @@ void label(juce::Graphics& g,const juce::String& s,juce::Rectangle<float> r,floa
     g.drawText(s,r,juce::Justification::centred);
 }
 }
-void BreezeModAudioProcessorEditor::Stage::paint(juce::Graphics& g)
+void SkellFanAudioProcessorEditor::Stage::paint(juce::Graphics& g)
 {
     g.addTransform(juce::AffineTransform::scale(getWidth()/Theme::W,getHeight()/Theme::H));
     g.fillAll(Theme::black);
@@ -25,7 +25,7 @@ void BreezeModAudioProcessorEditor::Stage::paint(juce::Graphics& g)
     g.fillEllipse(115.0f,67.0f,701.0f,676.0f);
     g.setColour(juce::Colour(0xff131519));g.fillRect(0,585,956,2);
 }
-void BreezeModAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
+void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
 {
     g.addTransform(juce::AffineTransform::scale(getWidth()/Theme::W,getHeight()/Theme::H));
     // Body is a separate static PNG. Plate is intentionally freshly drawn on top
@@ -68,13 +68,15 @@ void BreezeModAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     // Original wordmark; no existing marks are drawn.
     g.setColour(juce::Colour(0xff2f3338));
     g.setFont(Theme::font(24.0f,true));
-    g.drawText("B R E E Z E M O D",363,938,227,35,juce::Justification::centred);
+    g.drawText("SKELL",380,938,98,35,juce::Justification::centredRight);
+    g.setColour(juce::Colour(0xff4cbf72));
+    g.drawText("FAN",478,938,65,35,juce::Justification::centredLeft);
     g.setColour(juce::Colour(0xff4791ad));
     g.fillEllipse(345.0f,954.0f,8.0f,8.0f);
     g.fillEllipse(600.0f,954.0f,8.0f,8.0f);
 }
 
-void BreezeModAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
+void SkellFanAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
 {
     const auto read=[this](const char* id)
     { return processor.apvts.getRawParameterValue(id)->load(std::memory_order_relaxed); };
@@ -100,7 +102,7 @@ void BreezeModAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
     g.drawText(text,getLocalBounds().reduced(5,1),juce::Justification::centred);
 }
 
-BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProcessor& p)
+SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcessor& p)
     :AudioProcessorEditor(&p),plate(p),processor(p),fan(p),top(p),presets(p),depth(p),
      rate(p,"rate","RATE"),syncRate(p,"syncDiv","RATE"),wave(p,"wave","WAVE"),
      saturation(p,"saturation","",true,true),scope(p),rateReadout(p),
@@ -188,15 +190,15 @@ BreezeModAudioProcessorEditor::BreezeModAudioProcessorEditor(BreezeModAudioProce
     else rate.toFront(false);
     startTimerHz(30);
 }
-BreezeModAudioProcessorEditor::~BreezeModAudioProcessorEditor()
+SkellFanAudioProcessorEditor::~SkellFanAudioProcessorEditor()
 {
     stopTimer();
     setConstrainer(nullptr);
     setLookAndFeel(nullptr);
 }
-void BreezeModAudioProcessorEditor::setChoice(juce::ComboBox& combo,int value)
+void SkellFanAudioProcessorEditor::setChoice(juce::ComboBox& combo,int value)
 {combo.setSelectedId(value+1,juce::sendNotificationSync);}
-void BreezeModAudioProcessorEditor::resized()
+void SkellFanAudioProcessorEditor::resized()
 {
     const float sx=getWidth()/Theme::W,sy=getHeight()/Theme::H;
     auto place=[sx,sy](juce::Component& c,float x,float y,float w,float h)
@@ -222,7 +224,7 @@ void BreezeModAudioProcessorEditor::resized()
     processor.apvts.state.setProperty("uiWidth",getWidth(),nullptr);
     processor.apvts.state.setProperty("uiHeight",getHeight(),nullptr);
 }
-void BreezeModAudioProcessorEditor::timerCallback()
+void SkellFanAudioProcessorEditor::timerCallback()
 {
     const auto get=[this](const char* id){return processor.apvts.getRawParameterValue(id)->load();};
     const int m=juce::jlimit(0,3,static_cast<int>(get("mode")));
@@ -247,6 +249,7 @@ void BreezeModAudioProcessorEditor::timerCallback()
         else rate.toFront(false);
         plate.repaint(); // cached markings switch only MANUAL <-> HOST
     }
+    top.refreshSkin();
     rateReadout.repaint();
     outputMeter.refresh();
     modeInfo.refresh();

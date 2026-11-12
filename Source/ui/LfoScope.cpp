@@ -1,6 +1,6 @@
 #include "LfoScope.h"
 #include "Theme.h"
-LfoScope::LfoScope(BreezeModAudioProcessor& processor):p(processor)
+LfoScope::LfoScope(SkellFanAudioProcessor& processor):p(processor)
 {setInterceptsMouseClicks(false,false);}
 void LfoScope::paint(juce::Graphics& g)
 {

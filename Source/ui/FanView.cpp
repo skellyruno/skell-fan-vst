@@ -1,7 +1,7 @@
 #include "FanView.h"
 #include <BinaryData.h>
 #include <cmath>
-FanView::FanView(BreezeModAudioProcessor& p):processor(p)
+FanView::FanView(SkellFanAudioProcessor& p):processor(p)
 {
     setInterceptsMouseClicks(false,false);
     body=Theme::image(BinaryData::fan_body_png,BinaryData::fan_body_pngSize);

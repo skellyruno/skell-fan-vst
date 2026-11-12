@@ -12,11 +12,11 @@
 #include "ui/LfoScope.h"
 #include "ui/StatusPanels.h"
 
-class BreezeModAudioProcessorEditor final : public juce::AudioProcessorEditor,private juce::Timer
+class SkellFanAudioProcessorEditor final : public juce::AudioProcessorEditor,private juce::Timer
 {
 public:
-    explicit BreezeModAudioProcessorEditor(BreezeModAudioProcessor&);
-    ~BreezeModAudioProcessorEditor() override;
+    explicit SkellFanAudioProcessorEditor(SkellFanAudioProcessor&);
+    ~SkellFanAudioProcessorEditor() override;
     void resized() override;
 private:
     class Stage final : public juce::Component
@@ -28,24 +28,24 @@ private:
     class PlateOverlay final : public juce::Component
     {
     public:
-        explicit PlateOverlay(BreezeModAudioProcessor& p) : processor(p)
+        explicit PlateOverlay(SkellFanAudioProcessor& p) : processor(p)
         { setInterceptsMouseClicks(false,false); setBufferedToImage(true); }
         void paint(juce::Graphics&) override;
     private:
-        BreezeModAudioProcessor& processor;
+        SkellFanAudioProcessor& processor;
     } plate;
     class RateReadout final : public juce::Component
     {
     public:
-        explicit RateReadout(BreezeModAudioProcessor& owner) : processor(owner)
+        explicit RateReadout(SkellFanAudioProcessor& owner) : processor(owner)
         { setInterceptsMouseClicks(false,false); }
         void paint(juce::Graphics&) override;
     private:
-        BreezeModAudioProcessor& processor;
+        SkellFanAudioProcessor& processor;
     };
     void timerCallback() override;
     void setChoice(juce::ComboBox& choice,int i);
-    BreezeModAudioProcessor& processor;
+    SkellFanAudioProcessor& processor;
     BreezeLookAndFeel theme;
     FanView fan;
     TopBar top;
@@ -64,5 +64,5 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modeAttach,syncAttach,noteAttach;
     juce::ComponentBoundsConstrainer constrainer;
     int lastPlateSync = -1;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BreezeModAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SkellFanAudioProcessorEditor)
 };

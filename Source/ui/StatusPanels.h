@@ -8,12 +8,12 @@
 class LiveMeter final : public juce::Component
 {
 public:
-    explicit LiveMeter(BreezeModAudioProcessor& owner) : processor(owner)
+    explicit LiveMeter(SkellFanAudioProcessor& owner) : processor(owner)
     { setInterceptsMouseClicks(false, false); }
     void refresh() noexcept;
     void paint(juce::Graphics&) override;
 private:
-    BreezeModAudioProcessor& processor;
+    SkellFanAudioProcessor& processor;
     std::array<float, 2> rms {{0.0f, 0.0f}};
     std::array<float, 2> peaks {{0.0f, 0.0f}};
     std::array<int, 2> clipHold {{0, 0}};
@@ -23,12 +23,12 @@ private:
 class ModeInfo final : public juce::Component
 {
 public:
-    explicit ModeInfo(BreezeModAudioProcessor& owner) : processor(owner)
+    explicit ModeInfo(SkellFanAudioProcessor& owner) : processor(owner)
     { setInterceptsMouseClicks(false, false); }
     void paint(juce::Graphics&) override;
     void refresh();
 private:
-    BreezeModAudioProcessor& processor;
+    SkellFanAudioProcessor& processor;
     int lastMode=-1, lastWave=-1, lastSync=-1, lastPower=-1;
     float lastRate=-1.0f;
 };
