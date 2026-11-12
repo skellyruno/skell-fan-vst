@@ -10,6 +10,52 @@ void label(juce::Graphics& g,const juce::String& s,juce::Rectangle<float> r,floa
     g.drawText(s,r,juce::Justification::centred);
 }
 }
+void FanMotionButton::paintButton(juce::Graphics& g,bool hover,bool pressed)
+{
+    if(getWidth()<=0 || getHeight()<=0) return;
+    const float cx=getWidth()*0.5f,cy=getHeight()*0.5f;
+    const float scale=juce::jmin(getWidth(),getHeight())/35.0f;
+    const float radius=16.0f*scale;
+    g.setColour(juce::Colours::black.withAlpha(0.32f));
+    g.fillEllipse(cx-radius+scale,cy-radius+2.0f*scale,
+                  radius*2.0f,radius*2.0f);
+    juce::ColourGradient metal(juce::Colour(0xffd0dcd3),cx-radius,cy-radius,
+                               juce::Colour(0xff44544a),cx+radius,cy+radius,false);
+    g.setGradientFill(metal);
+    g.fillEllipse(cx-radius,cy-radius,radius*2.0f,radius*2.0f);
+    g.setColour(hover?Theme::cyan.withAlpha(0.85f)
+                     :juce::Colour(0xff6e8973));
+    g.drawEllipse(cx-radius,cy-radius,radius*2.0f,radius*2.0f,1.5f*scale);
+    g.setColour(pressed?juce::Colour(0xff111912):juce::Colour(0xff15221a));
+    g.fillEllipse(cx-radius+3.0f*scale,cy-radius+3.0f*scale,
+                  2.0f*(radius-3.0f*scale),2.0f*(radius-3.0f*scale));
+    const bool moving=getButtonText()=="||";
+    g.setColour(moving?Theme::cyan:juce::Colour(0xffb8c7bd));
+    if (moving)
+    {
+        g.fillRoundedRectangle(cx-5.2f*scale,cy-6.2f*scale,
+                               3.4f*scale,12.4f*scale,0.8f*scale);
+        g.fillRoundedRectangle(cx+1.8f*scale,cy-6.2f*scale,
+                               3.4f*scale,12.4f*scale,0.8f*scale);
+    }
+    else
+    {
+        juce::Path triangle;
+        triangle.startNewSubPath(cx-3.6f*scale,cy-6.2f*scale);
+        triangle.lineTo(cx+6.0f*scale,cy);
+        triangle.lineTo(cx-3.6f*scale,cy+6.2f*scale);
+        triangle.closeSubPath();
+        g.fillPath(triangle);
+    }
+    if(hasKeyboardFocus(false))
+    {
+        g.setColour(Theme::cyan.withAlpha(0.85f));
+        g.drawEllipse(cx-radius-2.0f*scale,cy-radius-2.0f*scale,
+                      2.0f*(radius+2.0f*scale),2.0f*(radius+2.0f*scale),
+                      1.5f*scale);
+    }
+}
+
 void SkellFanAudioProcessorEditor::Stage::paint(juce::Graphics& g)
 {
     g.addTransform(juce::AffineTransform::scale(getWidth()/Theme::W,getHeight()/Theme::H));
@@ -154,6 +200,8 @@ SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcesso
         addAndMakeVisible(c);
     fanSwitch.setButtonText("||");
     fanSwitch.setTooltip("Pause the fan animation (does not affect audio)");
+    fanSwitch.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    fanSwitch.setWantsKeyboardFocus(true);
     fanSwitch.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff18231b));
     fanSwitch.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffeaf1f3));
     fanSwitch.onClick=[this]

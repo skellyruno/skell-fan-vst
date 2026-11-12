@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "../Source/PluginProcessor.h"
 #include "../Source/ui/TopBar.h"
+#include "../Source/PluginEditor.h"
 #include "../Source/ui/Theme.h"
 #include <array>
 #include <cmath>
@@ -197,6 +198,28 @@ void testEditor(SkellFanAudioProcessor& processor)
         check(processor.apvts.getRawParameterValue("power")->load()!=(before>0.5f?1.0f:0.0f),
               "Rightmost Power button is connected to bypass");
         powerButton->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+    }
+    // The motor-animation switch is UI only; it must never bypass or
+    // change the plugin's audio parameters.
+    FanMotionButton* animationSwitch=nullptr;
+    for(int i=0;i<editor->getNumChildComponents();++i)
+        if(auto* child=dynamic_cast<FanMotionButton*>(editor->getChildComponent(i)))
+            animationSwitch=child;
+    check(animationSwitch!=nullptr,"Round machined animation button exists");
+    if(animationSwitch)
+    {
+        const bool initial=static_cast<bool>(
+            processor.apvts.state.getProperty("uiFanAnimation",true));
+        const float powerBefore=processor.apvts.getRawParameterValue("power")->load();
+        animationSwitch->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+        check(static_cast<bool>(processor.apvts.state.getProperty(
+                  "uiFanAnimation",true))!=initial,
+              "Animation button changes only the fan's motion");
+        check(processor.apvts.getRawParameterValue("power")->load()==powerBefore,
+              "Animation switch does not modify audio bypass");
+        animationSwitch->triggerClick();
         juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
     }
     const juce::Colour blue(0xff18a9df);

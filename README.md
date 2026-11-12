@@ -10,8 +10,10 @@ finish and all established JUCE parameters. This update improves the
   custom scale-aware vector symbols, not ambiguous S/X/R letters.
 - OUTPUT meter has calibrated 0/-24/-54 dBFS markings beside the bars,
   with no collision against the clip indicators.
-- The mode panel's footer shows DRIVE and MIX values instead of repeating
-  the LFO rate already visible on the panel.
+- The mode panel's footer shows compact SAT and MIX values without
+  truncation instead of repeating the LFO rate on the control plate.
+- The pause/play control for fan motion is now a recessed circular metal
+  switch with engraved vector playback marks (no impact on audio).
 - Subtle fixed lathe highlights refine the fan's metal bearing.
 - Context-menu chrome and the application LookAndFeel now match the
   dark-green SkellFan hardware palette.

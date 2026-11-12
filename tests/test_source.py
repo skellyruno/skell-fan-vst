@@ -217,6 +217,9 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('Fine, fixed concentric lathe details',fan)
         self.assertIn('const float output=breeze::dsp::sanitizeAudioSample(',processor)
         self.assertIn('testInvalidInputAndSilentTail()',integration)
+        self.assertIn('FanMotionButton',integration)
+        self.assertIn('fanSwitch.setMouseCursor',editor)
+        self.assertIn('g.drawText("SAT " + juce::String(saturation)',status)
 
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')

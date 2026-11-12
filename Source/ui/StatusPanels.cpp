@@ -152,10 +152,10 @@ void ModeInfo::paint(juce::Graphics& g)
     g.setColour(juce::Colour(0xff365a43));
     g.drawHorizontalLine(147,14.0f,142.0f);
     g.setColour(juce::Colour(0xffbcebc8));
-    g.setFont(Theme::font(12.5f,true));
+    g.setFont(Theme::font(11.5f,true));
     const auto saturation=juce::roundToInt(get("saturation"));
     const auto mix=juce::roundToInt(get("mix"));
-    g.drawText("DRIVE " + juce::String(saturation) + "%   MIX " +
+    g.drawText("SAT " + juce::String(saturation) + "%  MIX " +
                    juce::String(mix) + "%",
                13,152,128,23,juce::Justification::centred);
 }
