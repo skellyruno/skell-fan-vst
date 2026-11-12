@@ -1,12 +1,14 @@
 #include <JuceHeader.h>
 #include "../Source/PluginProcessor.h"
 #include "../Source/ui/TopBar.h"
+#include "../Source/PluginEditor.h"
 #include "../Source/ui/Theme.h"
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <chrono>
+#include <limits>
 
 namespace
 {
@@ -77,6 +79,42 @@ void testProcessing(SkellFanAudioProcessor& processor)
                                   static_cast<int>(savedState.getSize()));
     const float restored=processor.apvts.getRawParameterValue("depth")->load();
     check(std::abs(restored-32.0f)<0.2f,"APVTS state save/load roundtrip");
+}
+
+void testInvalidInputAndSilentTail()
+{
+    SkellFanAudioProcessor processor;
+    processor.prepareToPlay(48000.0,256);
+    setParameter(processor,"saturation",0.0f);
+    setParameter(processor,"mix",65.0f);
+    setParameter(processor,"depth",75.0f);
+    juce::AudioBuffer<float> audio(2,256);
+    juce::MidiBuffer midi;
+    bool safe=true;
+    for (int mode=0; mode<4; ++mode)
+    {
+        setParameter(processor,"mode",static_cast<float>(mode));
+        for (int block=0; block<16; ++block)
+        {
+            audio.clear();
+            if (block==0)
+            {
+                audio.setSample(0,5,std::numeric_limits<float>::quiet_NaN());
+                audio.setSample(1,9,std::numeric_limits<float>::infinity());
+                audio.setSample(0,13,-std::numeric_limits<float>::infinity());
+            }
+            processor.processBlock(audio,midi);
+            for (int channel=0;channel<2;++channel)
+                for (int sample=0;sample<256;++sample)
+                    safe &= std::isfinite(audio.getSample(channel,sample));
+        }
+    }
+    check(safe,"All real DSP modes safely process NaN/Inf upstream input");
+    check(std::isfinite(processor.displayRms[0].load())
+          && std::isfinite(processor.displayRms[1].load())
+          && std::isfinite(processor.displayPeak[0].load())
+          && std::isfinite(processor.displayPeak[1].load()),
+          "Audio meters remain finite after hostile input");
 }
 
 void testEditor(SkellFanAudioProcessor& processor)
@@ -162,6 +200,28 @@ void testEditor(SkellFanAudioProcessor& processor)
         powerButton->triggerClick();
         juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
     }
+    // The motor-animation switch is UI only; it must never bypass or
+    // change the plugin's audio parameters.
+    FanMotionButton* animationSwitch=nullptr;
+    for(int i=0;i<editor->getNumChildComponents();++i)
+        if(auto* child=dynamic_cast<FanMotionButton*>(editor->getChildComponent(i)))
+            animationSwitch=child;
+    check(animationSwitch!=nullptr,"Round machined animation button exists");
+    if(animationSwitch)
+    {
+        const bool initial=static_cast<bool>(
+            processor.apvts.state.getProperty("uiFanAnimation",true));
+        const float powerBefore=processor.apvts.getRawParameterValue("power")->load();
+        animationSwitch->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+        check(static_cast<bool>(processor.apvts.state.getProperty(
+                  "uiFanAnimation",true))!=initial,
+              "Animation button changes only the fan's motion");
+        check(processor.apvts.getRawParameterValue("power")->load()==powerBefore,
+              "Animation switch does not modify audio bypass");
+        animationSwitch->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+    }
     const juce::Colour blue(0xff18a9df);
     const juce::Colour gray(0xff858585);
     juce::Image preview(juce::Image::ARGB,2,1,true);
@@ -217,6 +277,7 @@ int main()
     juce::ScopedJuceInitialiser_GUI init;
     SkellFanAudioProcessor processor;
     testProcessing(processor);
+    testInvalidInputAndSilentTail();
     testEditor(processor);
     std::cout<<(failures==0?"All UI/processor tests passed\n":"UI/processor tests failed\n");
     return failures==0?0:1;

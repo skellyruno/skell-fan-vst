@@ -1,3 +1,25 @@
+# SkellFan v1.9 — machined hardware UI and final sample safety
+
+- Replaced the bright flat control-rim with metallic gradient depth,
+  fine edge highlights and four inset cross-head screws.
+- Gave five preset actions original vector icons and focus/hover chrome.
+- Relocated the output meter scale away from the clipping LEDs and made
+  0/-24/-54 dBFS markings consistent with the actual meter geometry.
+- Removed duplicated rate display: mode telemetry now shows compact
+  saturation/mix values without clipping.
+- Replaced the free-floating rectangular fan-motion button with a small
+  round machined switch and keyboard-focus styling; verified it only
+  changes fan animation, never audio bypass.
+- Added subtle stationary bearing engravings beneath the fan grille.
+- Matched popup and text-entry colours to the black/green hardware theme;
+  renamed the internal BreezeLookAndFeel class to SkellFanLookAndFeel.
+- Added finite-output protection against invalid floating-point results
+  and JUCE integration tests for hostile NaN/Inf input.
+- Preserved existing VST3 identity, 11 parameter IDs, saved states,
+  SkellCore dependency and factory/user presets.
+
+---
+
 # SkellFan v1.8 — fan/skull mark, neon-green UI and smooth HOST sync
 
 - Replaced old skull-key header button with a three-blade vector fan

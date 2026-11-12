@@ -53,11 +53,14 @@ void LiveMeter::paint(juce::Graphics& g)
     g.setColour(juce::Colour(0xffd4efdd));
     g.drawText("OUTPUT",12,5,92,20,juce::Justification::centred);
 
+    // Inset calibrated scale; the previous -54 label collided with CLIP LEDs.
+    g.setColour(juce::Colour(0xff476a51).withAlpha(0.5f));
+    g.drawHorizontalLine(89,31.0f,105.0f);
     constexpr int segments=21;
     constexpr float top=44.0f, step=5.05f;
     for (int ch=0; ch<2; ++ch)
     {
-        const float x = 26.0f+ch*43.0f;
+        const float x = 35.0f+ch*40.0f;
         g.setColour(juce::Colour(0xffa3b9aa));
         g.setFont(Theme::font(12.0f,true));
         g.drawText(ch==0?"L":"R",juce::Rectangle<float>{x,29.0f,24.0f,13.0f},
@@ -84,10 +87,14 @@ void LiveMeter::paint(juce::Graphics& g)
                         ?juce::Colour(0xffff6f5e):juce::Colour(0xff35473b));
         g.fillRoundedRectangle(x+5.0f,154.0f,14.0f,5.0f,2.0f);
     }
-    g.setFont(Theme::font(10.0f));
-    g.setColour(juce::Colour(0xff8aa892));
-    g.drawText("−54",9,153,24,11,juce::Justification::left);
-    g.drawText("0 dBFS",69,166,40,13,juce::Justification::right);
+    g.setFont(Theme::font(10.0f,true));
+    g.setColour(juce::Colour(0xffa5bbaa));
+    g.drawText("0",8,39,22,12,juce::Justification::centredRight);
+    g.drawText("-24",4,83,26,12,juce::Justification::centredRight);
+    g.drawText("-54",4,139,26,12,juce::Justification::centredRight);
+    g.setColour(juce::Colour(0xff718a78));
+    g.setFont(Theme::font(9.0f,true));
+    g.drawText("dBFS",30,165,55,12,juce::Justification::centred);
 }
 
 void ModeInfo::refresh()
@@ -98,11 +105,13 @@ void ModeInfo::refresh()
     const int wave=static_cast<int>(value("wave"));
     const int sync=static_cast<int>(value("syncMode"));
     const int power=static_cast<int>(value("power"));
-    const float rate=processor.displayRate.load(std::memory_order_relaxed);
+    const int sat=juce::roundToInt(value("saturation"));
+    const int mix=juce::roundToInt(value("mix"));
     if (mode!=lastMode || wave!=lastWave || sync!=lastSync || power!=lastPower
-        || std::abs(rate-lastRate)>=0.015f)
+        || sat!=lastSat || mix!=lastMix)
     {
-        lastMode=mode; lastWave=wave; lastSync=sync; lastPower=power; lastRate=rate;
+        lastMode=mode; lastWave=wave; lastSync=sync; lastPower=power;
+        lastSat=sat; lastMix=mix;
         repaint();
     }
 }
@@ -143,7 +152,10 @@ void ModeInfo::paint(juce::Graphics& g)
     g.setColour(juce::Colour(0xff365a43));
     g.drawHorizontalLine(147,14.0f,142.0f);
     g.setColour(juce::Colour(0xffbcebc8));
-    g.setFont(Theme::font(12.5f,true));
-    g.drawText(juce::String(processor.displayRate.load(std::memory_order_relaxed),2)+" Hz",
+    g.setFont(Theme::font(11.5f,true));
+    const auto saturation=juce::roundToInt(get("saturation"));
+    const auto mix=juce::roundToInt(get("mix"));
+    g.drawText("SAT " + juce::String(saturation) + "%  MIX " +
+                   juce::String(mix) + "%",
                13,152,128,23,juce::Justification::centred);
 }

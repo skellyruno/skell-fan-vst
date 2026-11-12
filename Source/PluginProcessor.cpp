@@ -297,7 +297,11 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
                     dryValue+=alignedDry*weight;
                 }
                 const float mixed=breeze::dsp::dryWetLinear(dryValue,wetValue,wet);
-                const float output=dryNormal[ch]+power*(mixed-dryNormal[ch]);
+                // A last-stage finite guard protects downstream plugins and
+                // output meters if any extreme upstream value overflows an
+                // intermediate effect calculation. Finite samples are unchanged.
+                const float output=breeze::dsp::sanitizeAudioSample(
+                    dryNormal[ch]+power*(mixed-dryNormal[ch]));
                 buffer.setSample(ch,sample,output);
                 const float magnitude=std::abs(output);
                 meterPeak[static_cast<size_t>(ch)]=juce::jmax(meterPeak[static_cast<size_t>(ch)],magnitude);

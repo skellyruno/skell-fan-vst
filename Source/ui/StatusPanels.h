@@ -30,5 +30,5 @@ public:
 private:
     SkellFanAudioProcessor& processor;
     int lastMode=-1, lastWave=-1, lastSync=-1, lastPower=-1;
-    float lastRate=-1.0f;
+    int lastSat=-1, lastMix=-1;
 };

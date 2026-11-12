@@ -1,8 +1,8 @@
 #pragma once
 #include <JuceHeader.h>
-class BreezeLookAndFeel final : public juce::LookAndFeel_V4
+class SkellFanLookAndFeel final : public juce::LookAndFeel_V4
 {
 public:
-    BreezeLookAndFeel();
+    SkellFanLookAndFeel();
     void drawPopupMenuBackground(juce::Graphics&,int,int) override;
 };

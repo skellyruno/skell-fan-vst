@@ -10,6 +10,52 @@ void label(juce::Graphics& g,const juce::String& s,juce::Rectangle<float> r,floa
     g.drawText(s,r,juce::Justification::centred);
 }
 }
+void FanMotionButton::paintButton(juce::Graphics& g,bool hover,bool pressed)
+{
+    if(getWidth()<=0 || getHeight()<=0) return;
+    const float cx=getWidth()*0.5f,cy=getHeight()*0.5f;
+    const float scale=juce::jmin(getWidth(),getHeight())/35.0f;
+    const float radius=16.0f*scale;
+    g.setColour(juce::Colours::black.withAlpha(0.32f));
+    g.fillEllipse(cx-radius+scale,cy-radius+2.0f*scale,
+                  radius*2.0f,radius*2.0f);
+    juce::ColourGradient metal(juce::Colour(0xffd0dcd3),cx-radius,cy-radius,
+                               juce::Colour(0xff44544a),cx+radius,cy+radius,false);
+    g.setGradientFill(metal);
+    g.fillEllipse(cx-radius,cy-radius,radius*2.0f,radius*2.0f);
+    g.setColour(hover?Theme::cyan.withAlpha(0.85f)
+                     :juce::Colour(0xff6e8973));
+    g.drawEllipse(cx-radius,cy-radius,radius*2.0f,radius*2.0f,1.5f*scale);
+    g.setColour(pressed?juce::Colour(0xff111912):juce::Colour(0xff15221a));
+    g.fillEllipse(cx-radius+3.0f*scale,cy-radius+3.0f*scale,
+                  2.0f*(radius-3.0f*scale),2.0f*(radius-3.0f*scale));
+    const bool moving=getButtonText()=="||";
+    g.setColour(moving?Theme::cyan:juce::Colour(0xffb8c7bd));
+    if (moving)
+    {
+        g.fillRoundedRectangle(cx-5.2f*scale,cy-6.2f*scale,
+                               3.4f*scale,12.4f*scale,0.8f*scale);
+        g.fillRoundedRectangle(cx+1.8f*scale,cy-6.2f*scale,
+                               3.4f*scale,12.4f*scale,0.8f*scale);
+    }
+    else
+    {
+        juce::Path triangle;
+        triangle.startNewSubPath(cx-3.6f*scale,cy-6.2f*scale);
+        triangle.lineTo(cx+6.0f*scale,cy);
+        triangle.lineTo(cx-3.6f*scale,cy+6.2f*scale);
+        triangle.closeSubPath();
+        g.fillPath(triangle);
+    }
+    if(hasKeyboardFocus(false))
+    {
+        g.setColour(Theme::cyan.withAlpha(0.85f));
+        g.drawEllipse(cx-radius-2.0f*scale,cy-radius-2.0f*scale,
+                      2.0f*(radius+2.0f*scale),2.0f*(radius+2.0f*scale),
+                      1.5f*scale);
+    }
+}
+
 void SkellFanAudioProcessorEditor::Stage::paint(juce::Graphics& g)
 {
     g.addTransform(juce::AffineTransform::scale(getWidth()/Theme::W,getHeight()/Theme::H));
@@ -31,8 +77,40 @@ void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     // Body is a separate static PNG. Plate is intentionally freshly drawn on top
     // so original photographed labels never become mistaken for live controls.
     auto r=Theme::plateRect;
-    g.setColour(juce::Colour(0xff2ba451));g.fillRoundedRectangle(r.expanded(13.0f,9.0f),22.0f);
+    // Hardware bezel: shaded anodised aluminium rather than a flat
+    // neon-green outline on the fan's physical control deck.
+    const auto bezel=r.expanded(13.0f,9.0f);
+    g.setColour(juce::Colours::black.withAlpha(0.29f));
+    g.fillRoundedRectangle(bezel.translated(2.0f,3.0f),22.0f);
+    juce::ColourGradient rim(juce::Colour(0xff4ea366),bezel.getTopLeft(),
+                            juce::Colour(0xff163d27),bezel.getBottomRight(),false);
+    rim.addColour(0.45,juce::Colour(0xff245e38));
+    g.setGradientFill(rim);
+    g.fillRoundedRectangle(bezel,22.0f);
+    g.setColour(juce::Colour(0xffb2ddbc).withAlpha(0.55f));
+    g.drawRoundedRectangle(bezel.reduced(1.1f),21.0f,1.2f);
+    g.setColour(juce::Colour(0xff071309).withAlpha(0.64f));
+    g.drawRoundedRectangle(r.expanded(5.0f,4.0f),16.0f,1.7f);
     Theme::metal(g,r);
+    // Small machined cross screws are drawn on the outer bezel; they never
+    // obstruct knobs, DEPTH, preset keys, or the engraved bottom nameplate.
+    constexpr std::array<std::array<float,2>,4> screws {{
+        {225.0f,744.0f},{727.0f,744.0f},
+        {225.0f,899.0f},{727.0f,899.0f}
+    }};
+    for (const auto& screw : screws)
+    {
+        const float cx=screw[0],cy=screw[1];
+        g.setColour(juce::Colour(0xff041008).withAlpha(0.7f));
+        g.fillEllipse(cx-5.1f,cy-5.1f,10.2f,10.2f);
+        juce::ColourGradient steel(juce::Colour(0xfff5fff8),cx-3.5f,cy-3.5f,
+                                   juce::Colour(0xff64766a),cx+4.0f,cy+4.0f,false);
+        g.setGradientFill(steel);
+        g.fillEllipse(cx-3.8f,cy-3.8f,7.6f,7.6f);
+        g.setColour(juce::Colour(0xff314038));
+        g.drawLine(cx-2.4f,cy-2.4f,cx+2.4f,cy+2.4f,0.9f);
+        g.drawLine(cx+2.4f,cy-2.4f,cx-2.4f,cy+2.4f,0.9f);
+    }
     // Fine horizontal brush strokes.
     g.setColour(juce::Colours::white.withAlpha(0.06f));
     for(int y=745;y<902;y+=3)g.drawLine(235.0f,static_cast<float>(y),718.0f,static_cast<float>(y),.5f);
@@ -122,6 +200,8 @@ SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcesso
         addAndMakeVisible(c);
     fanSwitch.setButtonText("||");
     fanSwitch.setTooltip("Pause the fan animation (does not affect audio)");
+    fanSwitch.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    fanSwitch.setWantsKeyboardFocus(true);
     fanSwitch.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff18231b));
     fanSwitch.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffeaf1f3));
     fanSwitch.onClick=[this]

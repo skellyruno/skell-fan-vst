@@ -12,6 +12,12 @@
 #include "ui/LfoScope.h"
 #include "ui/StatusPanels.h"
 
+class FanMotionButton final : public juce::TextButton
+{
+public:
+    void paintButton(juce::Graphics&,bool hover,bool pressed) override;
+};
+
 class SkellFanAudioProcessorEditor final : public juce::AudioProcessorEditor,private juce::Timer
 {
 public:
@@ -46,13 +52,13 @@ private:
     void timerCallback() override;
     void setChoice(juce::ComboBox& choice,int i);
     SkellFanAudioProcessor& processor;
-    BreezeLookAndFeel theme;
+    SkellFanLookAndFeel theme;
     FanView fan;
     TopBar top;
     PresetBar presets;
     DepthSlider depth;
     ChromeKnob rate,syncRate,wave,saturation;
-    juce::TextButton fanSwitch;
+    FanMotionButton fanSwitch;
     LfoScope scope;
     RateReadout rateReadout;
     LiveMeter outputMeter;
