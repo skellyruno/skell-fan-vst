@@ -4,7 +4,7 @@
 class ChromeKnob final : public juce::Slider
 {
 public:
-    ChromeKnob(BreezeModAudioProcessor&, const juce::String& parameterId,
+    ChromeKnob(SkellFanAudioProcessor&, const juce::String& parameterId,
                const juce::String& caption,bool miniature=false,bool blue=false);
     void paint(juce::Graphics&) override;
     void mouseDown(const juce::MouseEvent&) override;

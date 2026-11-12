@@ -9,19 +9,20 @@
 #include "dsp/ModDelay.h"
 #include "dsp/RotarySim.h"
 #include "dsp/Saturator.h"
+#include <SkellCore/Core.h>
 
-class BreezeModAudioProcessor final : public juce::AudioProcessor
+class SkellFanAudioProcessor final : public juce::AudioProcessor
 {
 public:
-    BreezeModAudioProcessor();
-    ~BreezeModAudioProcessor() override = default;
+    SkellFanAudioProcessor();
+    ~SkellFanAudioProcessor() override = default;
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
     bool isBusesLayoutSupported(const BusesLayout&) const override;
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
-    const juce::String getName() const override { return "BreezeMod"; }
+    const juce::String getName() const override { return "SkellFan"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -44,6 +45,7 @@ public:
     std::atomic<uint64_t> meterFrame {0};
     void loadFactoryPreset(int index);
 private:
+    skellcore::TempoClock tempoClock;
     breeze::dsp::Lfo lfo;
     breeze::dsp::ModDelay vibratoDelay, chorusDelay, dryDelay;
     breeze::dsp::RotarySim rotary;
@@ -64,5 +66,5 @@ private:
         juce::ValueSmoothingTypes::Linear>,3>,2> chorusGains;
     float p(const char* id) const noexcept
     { return apvts.getRawParameterValue(id)->load(std::memory_order_relaxed); }
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BreezeModAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SkellFanAudioProcessor)
 };

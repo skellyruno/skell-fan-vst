@@ -10,7 +10,7 @@ constexpr int presetCount=6;
 constexpr const char* soundParams[]={"mode","depth","rate","syncMode",
     "syncDiv","noteType","wave","saturation","width","mix"};
 }
-PresetBar::PresetBar(BreezeModAudioProcessor& proc):p(proc)
+PresetBar::PresetBar(SkellFanAudioProcessor& proc):p(proc)
 {
     for(auto* b : {&prev,&next,&current,&save,&remove,&shuffle})
     {
@@ -66,6 +66,12 @@ juce::String PresetBar::name() const
 juce::File PresetBar::folder() const
 {
     return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+       .getChildFile("Skell Audio").getChildFile("SkellFan").getChildFile("Presets");
+}
+juce::File PresetBar::legacyFolder() const
+{
+    // Read-only discovery of old BreezeMod files. Never move or erase them.
+    return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
        .getChildFile("Skell Audio").getChildFile("BreezeMod").getChildFile("Presets");
 }
 void PresetBar::chooseFactory(int i)
@@ -97,11 +103,18 @@ void PresetBar::popupMenu()
     for(int i=0;i<presetCount;++i)menu.addItem(i+1,factories[i]);
     menu.addSeparator();menu.addSectionHeader("USER PRESETS");
     juce::Array<juce::File> files;
-    for(const auto& file : folder().findChildFiles(juce::File::findFiles,false,"*.xml"))
-    {
-        files.add(file);
-        menu.addItem(1000+files.size()-1,file.getFileNameWithoutExtension());
-    }
+    juce::StringArray seen;
+    // Prefer new SkellFan presets when a filename also exists in BreezeMod.
+    // Old presets remain available in place, with no irreversible migration.
+    for (const auto& directory : {folder(), legacyFolder()})
+        for (const auto& file : directory.findChildFiles(juce::File::findFiles,false,"*.xml"))
+        {
+            const auto title=file.getFileNameWithoutExtension();
+            if (seen.contains(title)) continue;
+            seen.add(title);
+            files.add(file);
+            menu.addItem(1000+files.size()-1,title);
+        }
     if(files.isEmpty())menu.addItem(999,"No saved presets",false);
     juce::Component::SafePointer<PresetBar> safe(this);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&current),
@@ -127,7 +140,7 @@ void PresetBar::popupMenu()
 }
 void PresetBar::storePreset()
 {
-    auto* dialog=new juce::AlertWindow("Save BreezeMod preset","Preset name",
+    auto* dialog=new juce::AlertWindow("Save SkellFan preset","Preset name",
                                        juce::MessageBoxIconType::NoIcon);
     dialog->addTextEditor("name",name(),"Name");
     dialog->addButton("Save",1);dialog->addButton("Cancel",0);

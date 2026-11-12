@@ -1,3 +1,21 @@
+# SkellFan v1.7.0 — SkellCore integration and rename
+
+- Changed JUCE product, CMake targets, VST3/Standalone artifact names,
+  on-screen SKELLFAN wordmark and preset dialogs from BreezeMod to SkellFan.
+- Retained original VST3 manufacturer/plugin codes, old bundle ID,
+  `BREEZEMOD_PARAMETERS` root, and all 11 APVTS parameter IDs.
+- Pinned SkellCore shared DSP/UI modules to an immutable commit.
+- Routed host tempo bookkeeping through shared `skellcore::TempoClock`,
+  retaining the plugin's LFO/rotary/vibrato/chorus/tremolo/saturation engines.
+- Added SkellCore's shared clickable skull mark and non-audio accent cycle.
+- Kept old BreezeMod user presets discoverable, read-only in their original
+  directory; saves go to the new SkellFan directory.
+- Expanded C++/JUCE/UI tests and Windows VST3 CI for renamed targets.
+- The shared skull-key geometry is SkellCore's current mark; future master
+  Skell brand asset updates should happen centrally in SkellCore.
+
+---
+
 # BreezeMod v1.6 — DSP correctness, performance and UI polish (November 10, 2026)
 
 - Replaced correlated equal-power dry/wet law with unity-preserving linear mix;

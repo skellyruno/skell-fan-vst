@@ -3,7 +3,7 @@
 #include <BinaryData.h>
 #include <cmath>
 #include <cstdlib>
-ChromeKnob::ChromeKnob(BreezeModAudioProcessor& p,const juce::String& id,
+ChromeKnob::ChromeKnob(SkellFanAudioProcessor& p,const juce::String& id,
                       const juce::String& caption,bool miniature,bool blue)
     : name(caption),parameterId(id),small(miniature),isBlue(blue)
 {

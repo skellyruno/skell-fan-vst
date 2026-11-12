@@ -4,7 +4,7 @@
 class DepthSlider final : public juce::Slider
 {
 public:
-    explicit DepthSlider(BreezeModAudioProcessor&);
+    explicit DepthSlider(SkellFanAudioProcessor&);
     void paint(juce::Graphics&) override;
     void mouseWheelMove(const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 private:

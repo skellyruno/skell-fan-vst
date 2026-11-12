@@ -10,7 +10,7 @@ constexpr std::array<const char*,11> paramIds {
     "wave","saturation","width","mix" };
 }
 
-BreezeModAudioProcessor::BreezeModAudioProcessor()
+SkellFanAudioProcessor::SkellFanAudioProcessor()
     : AudioProcessor(BusesProperties().withInput("Input",juce::AudioChannelSet::stereo(),true)
                                   .withOutput("Output",juce::AudioChannelSet::stereo(),true)),
       apvts(*this,nullptr,"BREEZEMOD_PARAMETERS",makeLayout())
@@ -18,11 +18,12 @@ BreezeModAudioProcessor::BreezeModAudioProcessor()
     apvts.state.setProperty("uiPresetName","Chorus - Classic",nullptr);
     apvts.state.setProperty("uiFanAnimation",true,nullptr);
     apvts.state.setProperty("uiScopeVisible",false,nullptr);
+    apvts.state.setProperty("uiSkullSkin",1,nullptr);
     apvts.state.setProperty("uiWidth",765,nullptr);
     apvts.state.setProperty("uiHeight",787,nullptr);
 }
 
-APVTS::ParameterLayout BreezeModAudioProcessor::makeLayout()
+APVTS::ParameterLayout SkellFanAudioProcessor::makeLayout()
 {
     using namespace juce;
     APVTS::ParameterLayout result;
@@ -50,14 +51,14 @@ APVTS::ParameterLayout BreezeModAudioProcessor::makeLayout()
     return result;
 }
 
-bool BreezeModAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout) const
+bool SkellFanAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout) const
 {
     const auto in=layout.getMainInputChannelSet();
     return (in==juce::AudioChannelSet::mono()||in==juce::AudioChannelSet::stereo())
         && layout.getMainOutputChannelSet()==in;
 }
 
-void BreezeModAudioProcessor::prepareToPlay(double rate,int block)
+void SkellFanAudioProcessor::prepareToPlay(double rate,int block)
 {
     sr=juce::jmax(8000.0,rate);
     maxBlock=juce::jmax(16,block);
@@ -65,6 +66,8 @@ void BreezeModAudioProcessor::prepareToPlay(double rate,int block)
     // Polyphase oversampling is an intentional reported latency. Dry is delayed to match.
     setLatencySamples(saturation.getLatency());
     dryCompensation=juce::roundToInt(sr*0.004);
+    tempoClock.prepare(sr);
+    tempoClock.update(120.0,0.0,false);
     lfo.prepare(sr);
     vibratoDelay.prepare(sr,20.0);
     chorusDelay.prepare(sr,45.0);
@@ -112,7 +115,7 @@ void BreezeModAudioProcessor::prepareToPlay(double rate,int block)
     lfoPhase.store(0.0f,std::memory_order_relaxed);
 }
 
-void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer&)
+void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
     const int channels=buffer.getNumChannels(), n=buffer.getNumSamples();
@@ -154,8 +157,15 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
             }
         }
     if(!std::isfinite(bpm)||bpm<20.0||bpm>400.0)bpm=120.0;
+    // SkellCore owns the host tempo/beat bookkeeping; the existing PPQ
+    // discontinuity detector still controls when LFO phase is hard-locked.
+    tempoClock.update(bpm,validPPQ?ppq:tempoClock.beatPosition(),transportPlaying);
+    bpm=tempoClock.bpm();
     displayBpm.store(static_cast<float>(bpm),std::memory_order_relaxed);
-    const double hz=hostSync?bpm/(60.0*beats):static_cast<double>(p("rate"));
+    // Clock BPM stays correct even when the host sample rate exceeds the
+    // SkellCore portable clock's 192 kHz bookkeeping range.
+    const double hz=hostSync?tempoClock.bpm()/(60.0*beats)
+                            :static_cast<double>(p("rate"));
     // Only hard-lock PPQ on entry/playback or a real seek/loop jump.
     // Re-locking on every audio block while rate-smoothing caused phase clicks.
     if(hostSync && transportPlaying && validPPQ)
@@ -301,12 +311,13 @@ void BreezeModAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
         displayPeak[static_cast<size_t>(ch)].store(
             meterPeak[static_cast<size_t>(source)],std::memory_order_relaxed);
     }
+    tempoClock.advance(static_cast<std::size_t>(n));
     meterFrame.fetch_add(1, std::memory_order_release);
     lfoPhase.store(static_cast<float>(lfo.getPhase()),std::memory_order_relaxed);
     displayRate.store(static_cast<float>(lfo.getCurrentFrequency()),std::memory_order_relaxed);
 }
 
-void BreezeModAudioProcessor::loadFactoryPreset(int i)
+void SkellFanAudioProcessor::loadFactoryPreset(int i)
 {
     struct Preset{const char* name;float mode,depth,rate, sync,div,note,wave,sat,width,mix;};
     constexpr Preset presets[] {
@@ -331,17 +342,17 @@ void BreezeModAudioProcessor::loadFactoryPreset(int i)
     }
     apvts.state.setProperty("uiPresetName",z.name,nullptr);
 }
-void BreezeModAudioProcessor::getStateInformation(juce::MemoryBlock& data)
+void SkellFanAudioProcessor::getStateInformation(juce::MemoryBlock& data)
 {
     if(auto xml=apvts.copyState().createXml())copyXmlToBinary(*xml,data);
 }
-void BreezeModAudioProcessor::setStateInformation(const void* data,int size)
+void SkellFanAudioProcessor::setStateInformation(const void* data,int size)
 {
     if(auto xml=getXmlFromBinary(data,size))
         if(xml->hasTagName(apvts.state.getType().toString()))
             apvts.replaceState(juce::ValueTree::fromXml(*xml));
 }
-juce::AudioProcessorEditor* BreezeModAudioProcessor::createEditor()
-{return new BreezeModAudioProcessorEditor(*this);}
+juce::AudioProcessorEditor* SkellFanAudioProcessor::createEditor()
+{return new SkellFanAudioProcessorEditor(*this);}
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
-{return new BreezeModAudioProcessor();}
+{return new SkellFanAudioProcessor();}

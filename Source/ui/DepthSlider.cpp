@@ -1,7 +1,7 @@
 #include "DepthSlider.h"
 #include "Theme.h"
 #include <cmath>
-DepthSlider::DepthSlider(BreezeModAudioProcessor& p)
+DepthSlider::DepthSlider(SkellFanAudioProcessor& p)
 {
     setSliderStyle(juce::Slider::LinearHorizontal);
     setTextBoxStyle(juce::Slider::NoTextBox,true,0,0);

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(BreezeMod VERSION 1.6.0 LANGUAGES C CXX)
+project(SkellFan VERSION 1.7.0 LANGUAGES C CXX)
 
 # Retain the exact JUCE acquisition strategy of the supplied compiled StopDial template.
 include(FetchContent)
@@ -13,12 +13,23 @@ else()
     FetchContent_MakeAvailable(JUCE)
 endif()
 
-juce_add_plugin(BreezeMod
+# SkellCore is built as a separate, pinned CMake target, not copied into this repo.
+# Immutable revision prevents unrelated SkellCore updates changing the plugin.
+FetchContent_Declare(SkellCore
+    GIT_REPOSITORY https://github.com/skellyruno/skellcore-vst-template.git
+    GIT_TAG 05191f3cfade5a57c1eb97576cce6a348705222c
+    GIT_SHALLOW FALSE
+    SOURCE_SUBDIR SkellCore)
+FetchContent_MakeAvailable(SkellCore)
+
+# Preserve the old JUCE/VST3 identity so existing BreezeMod project instances
+# and 11 automation IDs can continue to resolve after renaming the product.
+juce_add_plugin(SkellFan
     COMPANY_NAME "Skell Audio"
     BUNDLE_ID "audio.skell.breezemod"
     PLUGIN_MANUFACTURER_CODE SkAu
     PLUGIN_CODE Bz01
-    PRODUCT_NAME "BreezeMod"
+    PRODUCT_NAME "SkellFan"
     DESCRIPTION "Fan-inspired four-mode stereo modulation"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
@@ -28,14 +39,14 @@ juce_add_plugin(BreezeMod
     COPY_PLUGIN_AFTER_BUILD FALSE
     FORMATS VST3 Standalone)
 
-juce_generate_juce_header(BreezeMod)
-juce_add_binary_data(BreezeModAssets SOURCES
+juce_generate_juce_header(SkellFan)
+juce_add_binary_data(SkellFanAssets SOURCES
     Assets/fan_body.png Assets/blades.png Assets/blades_blur.png
     Assets/grille.png Assets/hub_cap.png Assets/knob_chrome.png
     Assets/knob_blue.png Assets/key_strip.png Assets/small_key.png
     Assets/slider_thumb.png)
 
-target_sources(BreezeMod PRIVATE
+target_sources(SkellFan PRIVATE
     Source/PluginProcessor.h Source/PluginProcessor.cpp
     Source/PluginEditor.h Source/PluginEditor.cpp
     Source/dsp/Lfo.h Source/dsp/ModulationMath.h Source/dsp/ModulationSmoother.h Source/dsp/ModDelay.h
@@ -50,40 +61,46 @@ target_sources(BreezeMod PRIVATE
     Source/ui/LfoScope.h Source/ui/LfoScope.cpp
     Source/ui/StatusPanels.h Source/ui/StatusPanels.cpp)
 
-target_compile_features(BreezeMod PRIVATE cxx_std_17)
-target_compile_definitions(BreezeMod PRIVATE
+target_compile_features(SkellFan PRIVATE cxx_std_17)
+target_compile_definitions(SkellFan PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
-target_link_libraries(BreezeMod PRIVATE
-    BreezeModAssets juce::juce_audio_utils juce::juce_audio_processors
+target_link_libraries(SkellFan PRIVATE
+    SkellFanAssets SkellCore::DSP SkellCore::UI juce::juce_audio_utils juce::juce_audio_processors
     juce::juce_gui_extra juce::juce_dsp
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
 
-option(BREEZEMOD_BUILD_TESTS "Build JUCE DSP smoke tests" ON)
-if(BREEZEMOD_BUILD_TESTS)
+option(SKELLFAN_BUILD_TESTS "Build JUCE DSP smoke tests" ON)
+if(SKELLFAN_BUILD_TESTS)
     enable_testing()
-    juce_add_console_app(BreezeModDspTests PRODUCT_NAME "BreezeMod DSP Tests")
-    juce_generate_juce_header(BreezeModDspTests)
-    target_sources(BreezeModDspTests PRIVATE tests/DSPTests.cpp)
-    target_compile_features(BreezeModDspTests PRIVATE cxx_std_17)
-    target_compile_definitions(BreezeModDspTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
-    target_link_libraries(BreezeModDspTests PRIVATE juce::juce_audio_utils juce::juce_dsp
+    juce_add_console_app(SkellFanDspTests PRODUCT_NAME "SkellFan DSP Tests")
+    juce_generate_juce_header(SkellFanDspTests)
+    target_sources(SkellFanDspTests PRIVATE tests/DSPTests.cpp)
+    target_compile_features(SkellFanDspTests PRIVATE cxx_std_17)
+    target_compile_definitions(SkellFanDspTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+    target_link_libraries(SkellFanDspTests PRIVATE juce::juce_audio_utils juce::juce_dsp
         juce::juce_recommended_config_flags)
-    add_test(NAME BreezeModDspTests COMMAND BreezeModDspTests)
+    add_test(NAME SkellFanDspTests COMMAND SkellFanDspTests)
     # Offscreen JUCE editor snapshots and live processor-mode/preset tests.
-    juce_add_console_app(BreezeModUiTests PRODUCT_NAME "BreezeMod UI Tests")
-    juce_generate_juce_header(BreezeModUiTests)
-    target_sources(BreezeModUiTests PRIVATE tests/UITests.cpp)
-    target_compile_features(BreezeModUiTests PRIVATE cxx_std_17)
-    target_compile_definitions(BreezeModUiTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=1)
+    juce_add_console_app(SkellFanUiTests PRODUCT_NAME "SkellFan UI Tests")
+    juce_generate_juce_header(SkellFanUiTests)
+    target_sources(SkellFanUiTests PRIVATE tests/UITests.cpp)
+    target_compile_features(SkellFanUiTests PRIVATE cxx_std_17)
+    target_compile_definitions(SkellFanUiTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=1)
     # The test's generated JuceHeader.h includes BinaryData.h. Expose the
-    # actual JUCE asset target directly; BreezeMod links it privately.
-    target_link_libraries(BreezeModUiTests PRIVATE BreezeMod BreezeModAssets
+    # actual JUCE asset target directly; SkellFan links it privately.
+    target_link_libraries(SkellFanUiTests PRIVATE SkellFan SkellFanAssets SkellCore::DSP SkellCore::UI
         juce::juce_audio_utils juce::juce_dsp juce::juce_gui_extra
         juce::juce_recommended_config_flags)
-    add_test(NAME BreezeModUiTests COMMAND BreezeModUiTests)
+    add_test(NAME SkellFanUiTests COMMAND SkellFanUiTests)
 
-    add_executable(BreezeModPortableTests tests/PortableTests.cpp)
-    target_compile_features(BreezeModPortableTests PRIVATE cxx_std_17)
-    add_test(NAME BreezeModPortableTests COMMAND BreezeModPortableTests)
+    add_executable(SkellFanCoreTests)
+    target_sources(SkellFanCoreTests PRIVATE tests/SkellCoreIntegrationTests.cpp)
+    target_link_libraries(SkellFanCoreTests PRIVATE SkellCore::DSP)
+    target_compile_features(SkellFanCoreTests PRIVATE cxx_std_17)
+    add_test(NAME SkellFanCoreTests COMMAND SkellFanCoreTests)
+
+    add_executable(SkellFanPortableTests tests/PortableTests.cpp)
+    target_compile_features(SkellFanPortableTests PRIVATE cxx_std_17)
+    add_test(NAME SkellFanPortableTests COMMAND SkellFanPortableTests)
 endif()

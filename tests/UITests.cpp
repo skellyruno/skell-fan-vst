@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "../Source/PluginProcessor.h"
+#include "../Source/ui/TopBar.h"
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -15,7 +16,7 @@ void check(bool condition, const char* label)
     else std::cout<<"PASS: "<<label<<'\n';
 }
 
-void setParameter(BreezeModAudioProcessor& processor, const char* id, float value)
+void setParameter(SkellFanAudioProcessor& processor, const char* id, float value)
 {
     if (auto* param=processor.apvts.getParameter(id))
         param->setValueNotifyingHost(param->convertTo0to1(value));
@@ -23,7 +24,7 @@ void setParameter(BreezeModAudioProcessor& processor, const char* id, float valu
         check(false,"Audio parameter exists");
 }
 
-void testProcessing(BreezeModAudioProcessor& processor)
+void testProcessing(SkellFanAudioProcessor& processor)
 {
     processor.prepareToPlay(48000.0,512);
     setParameter(processor,"saturation",0.0f);
@@ -77,7 +78,7 @@ void testProcessing(BreezeModAudioProcessor& processor)
     check(std::abs(restored-32.0f)<0.2f,"APVTS state save/load roundtrip");
 }
 
-void testEditor(BreezeModAudioProcessor& processor)
+void testEditor(SkellFanAudioProcessor& processor)
 {
     std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
     check(editor != nullptr,"Editor created");
@@ -96,6 +97,35 @@ void testEditor(BreezeModAudioProcessor& processor)
         juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
         check(static_cast<int>(processor.apvts.getRawParameterValue("mode")->load())==1,
               "Clicking ROTARY selects the DSP mode");
+    }
+
+    // Shared SkullTheme is UI-only and saves a non-automatable appearance
+    // property; clicking the mark must never change active DSP parameters.
+    juce::Button* skullButton=nullptr;
+    for (int i=0;i<editor->getNumChildComponents();++i)
+        if (auto* top=dynamic_cast<TopBar*>(editor->getChildComponent(i)))
+            for (int j=0;j<top->getNumChildComponents();++j)
+                if (auto* child=top->getChildComponent(j))
+                    if (child->getName()=="SkellCore skull theme")
+                        skullButton=dynamic_cast<juce::Button*>(child);
+    check(skullButton!=nullptr,"SkellCore shared skull toggle exists");
+    if (skullButton)
+    {
+        const float depthBefore=processor.apvts.getRawParameterValue("depth")->load();
+        const int skinBefore=static_cast<int>(
+            processor.apvts.state.getProperty("uiSkullSkin",1));
+        skullButton->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+        check(static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))
+              ==(skinBefore+1)%4,"Clicking shared skull cycles accent skin");
+        check(processor.apvts.getRawParameterValue("depth")->load()==depthBefore,
+              "Shared skull theme does not alter audio parameters");
+        // Restore the initial Neon skin so exported screenshots represent the
+        // plugin's default appearance, not the single-click Ivory test state.
+        for (int cycle=0; cycle<3; ++cycle) skullButton->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+        check(static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))
+              ==skinBefore,"SkellCore accent selection wraps back to the default");
     }
 
     const std::array<std::array<int,2>,4> sizes {{{574,590},{765,787},{956,984},{1434,1476}}};
@@ -119,7 +149,7 @@ void testEditor(BreezeModAudioProcessor& processor)
         check(snapshot.getPixelAt(sz[0]/2,sz[1]/2).getAlpha()!=0,
               "Fan hub is visible in actual JUCE snapshot");
         const auto file=juce::File::getCurrentWorkingDirectory().getChildFile(
-            "BreezeMod-ui-"+juce::String(sz[0])+"x"+juce::String(sz[1])+".png");
+            "SkellFan-ui-"+juce::String(sz[0])+"x"+juce::String(sz[1])+".png");
         juce::FileOutputStream output(file);
         check(output.openedOk() && png.writeImageToStream(snapshot,output),
               "Editor screenshot saved");
@@ -130,7 +160,7 @@ void testEditor(BreezeModAudioProcessor& processor)
 int main()
 {
     juce::ScopedJuceInitialiser_GUI init;
-    BreezeModAudioProcessor processor;
+    SkellFanAudioProcessor processor;
     testProcessing(processor);
     testEditor(processor);
     std::cout<<(failures==0?"All UI/processor tests passed\n":"UI/processor tests failed\n");

@@ -1,3 +1,58 @@
+# SkellFan — SkellCore integration (v1.7.0)
+
+**Formerly BreezeMod.** One-word product label: **SkellFan**.
+Windows plugin outputs are `SkellFan.vst3` and `SkellFan.exe`.
+Four modulation modes: Vibrato, Rotary, Tremolo, Chorus.
+
+## SkellCore integration
+
+- CMake pins `skellyruno/skellcore-vst-template` to immutable commit
+  `05191f3cfade5a57c1eb97576cce6a348705222c` via FetchContent
+  (`SOURCE_SUBDIR SkellCore`). No source-code duplication or floating
+  main-branch dependencies.
+- `SkellCore::DSP`: the actual `skellcore::TempoClock` is prepared,
+  updated from the JUCE host BPM/PPQ, and advanced once per audio block.
+  The existing LFO phase-jump detection and four DSP algorithms are retained.
+- `SkellCore::UI`: a clickable shared skull-key mark in the top bar cycles
+  Ossuary/Neon/Ivory/Obsidian accent palettes. The fan stays retro blue.
+  The skin is non-automatable and does not change or process audio.
+- The separate `SkellFanCoreTests` suite verifies clock advancement and
+  transport state. JUCE UI tests verify that the shared skull toggles
+  without affecting a sound parameter.
+
+## Compatibility and migration
+
+To maximize compatibility with old BreezeMod projects, keep **unchanged**:
+manufacturer code `SkAu`, plugin code `Bz01`, bundle ID
+`audio.skell.breezemod`, the 11 APVTS parameter IDs, and the legacy
+ValueTree root tag `BREEZEMOD_PARAMETERS`. Those identifiers deliberately
+still contain the old internal name. Preset XML from
+`Skell Audio/BreezeMod/Presets` is available in the new preset menu
+**without moving or deleting the old files**. New saves are placed in
+`Skell Audio/SkellFan/Presets` (the newer folder takes precedence if names
+collide). Keep a backup of your old projects/presets while verifying the
+rename in FL Studio: hosts may cache plugin names, and installing both
+identical-ID binaries side by side is unsupported.
+
+## Build & test
+
+```powershell
+cmake -S . -B build -A x64
+cmake --build build --config Release --parallel 2
+ctest --test-dir build -C Release --output-on-failure
+```
+
+Requires a Windows MSVC toolchain and network access for first-time fetch
+of JUCE 8.0.12 and pinned SkellCore (or local pre-provisioned sources).
+GitHub Actions builds VST3 and Standalone, executes all test suites,
+checks the x64 VST3 bundle and publishes `SkellFan-Windows` and
+`SkellFan-UI-Snapshots` artifacts. This does not replace actual FL Studio
+load/unload, automation, listening and hardware CPU tests.
+
+---
+
+## Previous BreezeMod development notes (historical)
+
 # BreezeMod v1.6 — safer modulation DSP and cleaner fan UI (November 10, 2026)
 
 Preserves all 11 APVTS parameter IDs, factory/user preset formats, and Skell
