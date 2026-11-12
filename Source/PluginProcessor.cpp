@@ -162,7 +162,9 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
     tempoClock.update(bpm,validPPQ?ppq:tempoClock.beatPosition(),transportPlaying);
     bpm=tempoClock.bpm();
     displayBpm.store(static_cast<float>(bpm),std::memory_order_relaxed);
-    const double hz=hostSync?sr/(tempoClock.samplesPerBeat()*beats)
+    // Clock BPM stays correct even when the host sample rate exceeds the
+    // SkellCore portable clock's 192 kHz bookkeeping range.
+    const double hz=hostSync?tempoClock.bpm()/(60.0*beats)
                             :static_cast<double>(p("rate"));
     // Only hard-lock PPQ on entry/playback or a real seek/loop jump.
     // Re-locking on every audio block while rate-smoothing caused phase clicks.
