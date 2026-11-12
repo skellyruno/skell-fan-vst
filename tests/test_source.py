@@ -213,7 +213,7 @@ class SourceSanity(unittest.TestCase):
         self.assertNotIn('shuffle.setButtonText("R")',preset)
         self.assertIn('g.drawText("-24",4,91,26,12',status)
         self.assertIn('g.drawText("-54",4,139,26,12',status)
-        self.assertIn('"DRIVE " + juce::String(saturation)',status)
+        self.assertIn('"SAT " + juce::String(saturation)',status)
         self.assertIn('Fine, fixed concentric lathe details',fan)
         self.assertIn('const float output=breeze::dsp::sanitizeAudioSample(',processor)
         self.assertIn('testInvalidInputAndSilentTail()',integration)
