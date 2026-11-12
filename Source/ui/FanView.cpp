@@ -42,6 +42,16 @@ FanView::FanView(SkellFanAudioProcessor& p):processor(p)
     skeletonPath.startNewSubPath(8.0f,21.0f);
     skeletonPath.lineTo(11.0f,37.0f);
     skeletonPath.lineTo(9.0f,49.0f);
+    foregroundMask.startNewSubPath(274.0f,610.0f);
+    foregroundMask.lineTo(683.0f,610.0f);
+    foregroundMask.quadraticTo(727.0f,629.0f,745.0f,687.0f);
+    foregroundMask.lineTo(788.0f,901.0f);
+    foregroundMask.lineTo(797.0f,984.0f);
+    foregroundMask.lineTo(160.0f,984.0f);
+    foregroundMask.lineTo(166.0f,899.0f);
+    foregroundMask.lineTo(211.0f,687.0f);
+    foregroundMask.quadraticTo(232.0f,629.0f,274.0f,610.0f);
+    foregroundMask.closeSubPath();
     lastTime=juce::Time::getMillisecondCounterHiRes();
     startTimerHz(60);
 }
@@ -134,19 +144,8 @@ void FanView::paint(juce::Graphics& g)
     // before the front grille: no extra PNG and no detached neon patch.
     if (body.isValid())
     {
-        juce::Path foreground;
-        foreground.startNewSubPath(274.0f,610.0f);
-        foreground.lineTo(683.0f,610.0f);
-        foreground.quadraticTo(727.0f,629.0f,745.0f,687.0f);
-        foreground.lineTo(788.0f,901.0f);
-        foreground.lineTo(797.0f,984.0f);
-        foreground.lineTo(160.0f,984.0f);
-        foreground.lineTo(166.0f,899.0f);
-        foreground.lineTo(211.0f,687.0f);
-        foreground.quadraticTo(232.0f,629.0f,274.0f,610.0f);
-        foreground.closeSubPath();
         juce::Graphics::ScopedSaveState saved(g);
-        g.reduceClipRegion(foreground);
+        g.reduceClipRegion(foregroundMask);
         g.drawImage(body,juce::Rectangle<float>{0.0f,0.0f,Theme::W,Theme::H},
                     juce::RectanglePlacement::stretchToFit);
     }
