@@ -20,12 +20,15 @@ FanView::FanView(SkellFanAudioProcessor& p):processor(p)
             for (int x=left;x<juce::jmin(right,body.getWidth());++x)
             {
                 const auto c=pixels.getPixelColour(x,y);
-                if (c.getFloatAlpha()<0.08f || c.getSaturation()<0.30f
-                    || c.getHue()<0.24f || c.getHue()>0.48f)
-                    continue;
-                const float metalValue=juce::jlimit(0.20f,0.65f,c.getBrightness()*0.68f);
+                if (c.getFloatAlpha()<0.08f) continue;
+                // Fully neutralize every static under-guard pixel. The
+                // previous hue gate left green low-saturation antialiasing
+                // specks and made the arc appear dusty in HiDPI snapshots.
+                const float metalValue=c.getSaturation()>0.08f
+                    ? juce::jlimit(0.16f,0.67f,c.getBrightness()*0.68f)
+                    : c.getBrightness();
                 pixels.setPixelColour(x,y,juce::Colour::fromHSV(
-                    0.36f,0.075f,metalValue,c.getFloatAlpha()));
+                    0.0f,0.0f,metalValue,c.getFloatAlpha()));
             }
     }
     rotor=Theme::greenFanArtwork(Theme::image(BinaryData::blades_png,BinaryData::blades_pngSize));
