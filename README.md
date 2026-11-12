@@ -1,3 +1,34 @@
+# SkellFan v1.8 — green fan hardware and timing polish
+
+The **SKELLFAN** wordmark is contiguous: SKELL in ivory, FAN in neon
+green. The original blue fan artwork is now recoloured in memory once
+per editor instance; original PNGs and metal highlights remain intact.
+
+- Far-left **three-blade fan logo with the shared SkellCore skull face
+  in its central bearing**. Clicking it cycles accents; this is UI
+  only and does not change automation or DSP.
+- Far-right **Power** switch. Scope, preset browser, WIDTH and DRY/WET
+  have been repositioned to avoid header overlap at 574–1434 px.
+- Bottom title uses a dedicated dark inset metal nameplate rather than
+  text on uneven fan housing. No spacing between SKELL and FAN.
+- Saturated blue blades, stand trim, accent controls, meters, plate
+  edging and blue knob render neon green while chrome remains chrome;
+  clipping amber/red meter colors retain their warning meaning.
+- HOST note-division and dotted/triplet changes use a 10 ms
+  shortest-path LFO phase correction instead of an abrupt jump.
+  Transport starts and seeks still hard-lock to host PPQ.
+  This has no allocations and does not alter reported latency.
+- New Windows GUI tests validate button placement, click-to-bypass,
+  source artwork recolouring, and four JUCE editor sizes.
+
+**Compatibility:** all 11 automation IDs, the manufacturer/plugin codes
+(`SkAu`/`Bz01`), legacy bundle ID and XML state root remain unchanged.
+Existing BreezeMod preset files remain readable without migration.
+Validate existing FL Studio projects, presets, and high-rate HOST-sync
+automation in the host before distributing as production-ready.
+
+---
+
 # SkellFan — SkellCore integration (v1.7.0)
 
 **Formerly BreezeMod.** One-word product label: **SkellFan**.

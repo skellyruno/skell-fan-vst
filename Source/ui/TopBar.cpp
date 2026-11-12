@@ -11,7 +11,7 @@ void PowerToggle::paintButton(juce::Graphics& g,bool hover,bool down)
     juce::Path powerSymbol;
     powerSymbol.addCentredArc(cx,cy+1.0f,radius,radius,0,
         juce::MathConstants<float>::pi*.27f,juce::MathConstants<float>::pi*1.73f,true);
-    g.setColour(getToggleState()?juce::Colour(0xff9fe8f7):juce::Colour(0xffb8b9bd));
+    g.setColour(getToggleState()?Theme::cyan:juce::Colour(0xffb8b9bd));
     g.strokePath(powerSymbol,juce::PathStrokeType(2.9f));
     g.drawLine(cx,cy-13,cx,cy+1,2.9f);
     if(down){g.setColour(juce::Colours::white.withAlpha(.06f));g.fillRoundedRectangle(r,5);}
@@ -34,26 +34,58 @@ void ScopeToggle::paintButton(juce::Graphics& g,bool hover,bool down)
     g.strokePath(wave,juce::PathStrokeType(down?2.7f:2.0f));
 }
 
-void SkullToggle::paintButton(juce::Graphics& g,bool hover,bool pressed)
+void FanSkullToggle::paintButton(juce::Graphics& g,bool hover,bool down)
 {
     const auto palette=skellcore::ui::skullPalette(selected);
-    const auto area=getLocalBounds().toFloat().reduced(1.0f);
-    g.setColour(palette.panelHi.brighter(hover?0.09f:0.0f));
-    g.fillRoundedRectangle(area,5.0f);
+    const auto box=getLocalBounds().toFloat().reduced(1.0f);
+    const float scale=juce::jmin(box.getWidth()/53.0f,box.getHeight()/43.0f);
+    const float cx=box.getCentreX(), cy=box.getCentreY();
+    g.setColour(palette.panelHi.brighter(hover?0.13f:0.0f));
+    g.fillRoundedRectangle(box,5.0f);
     g.setColour(palette.line);
-    g.drawRoundedRectangle(area,5.0f,1.0f);
-    const float scale=juce::jmin((area.getWidth()-8.0f)/74.0f,
-                                 (area.getHeight()-8.0f)/28.0f);
-    const float dx=area.getX()+(area.getWidth()-74.0f*scale)*0.5f;
-    const float dy=area.getY()+(area.getHeight()-28.0f*scale)*0.5f;
-    juce::Graphics::ScopedSaveState saved(g);
-    g.addTransform(juce::AffineTransform::scale(scale).translated(dx,dy));
-    skellcore::ui::drawSkullKeyMark(g,0.0f,0.0f,
-                                    palette.accent,palette.panelHi);
-    if (pressed)
+    g.drawRoundedRectangle(box.reduced(0.5f),5.0f,1.0f);
+
+    // Original three-blade motor-fan silhouette built from one vector petal.
+    // 120-degree clones share the same hub; no image allocations in paint().
+    juce::Path blade;
+    blade.startNewSubPath(-4.0f*scale,-5.0f*scale);
+    blade.cubicTo(-11.0f*scale,-8.0f*scale,-15.0f*scale,-20.0f*scale,-8.0f*scale,-21.0f*scale);
+    blade.cubicTo(4.0f*scale,-25.0f*scale,12.0f*scale,-17.0f*scale,7.0f*scale,-8.0f*scale);
+    blade.closeSubPath();
+    for (int i=0;i<3;++i)
     {
-        g.setColour(palette.bone.withAlpha(0.15f));
-        g.fillRect(0.0f,0.0f,74.0f,28.0f);
+        auto petal=blade;
+        petal.applyTransform(juce::AffineTransform::rotation(
+            juce::MathConstants<float>::twoPi*static_cast<float>(i)/3.0f)
+                .translated(cx,cy));
+        g.setGradientFill(juce::ColourGradient(palette.accent.brighter(0.22f),
+            cx-10.0f*scale,cy-19.0f*scale,palette.accent.darker(0.30f),
+            cx+15.0f*scale,cy+17.0f*scale,false));
+        g.fillPath(petal);
+        g.setColour(palette.bone.withAlpha(0.35f));
+        g.strokePath(petal,juce::PathStrokeType(0.55f*scale));
+    }
+    g.setColour(palette.boneDim.withAlpha(0.72f));
+    g.drawEllipse(cx-21.0f*scale,cy-21.0f*scale,42.0f*scale,42.0f*scale,1.1f*scale);
+    g.setColour(palette.panelHi);
+    g.fillEllipse(cx-10.5f*scale,cy-10.5f*scale,21.0f*scale,21.0f*scale);
+    g.setColour(palette.boneDim);
+    g.drawEllipse(cx-10.5f*scale,cy-10.5f*scale,21.0f*scale,21.0f*scale,1.0f*scale);
+
+    // Clip SkellCore's shared skull-key geometry to the centre bearing:
+    // the shared skull face is used, but the long key shaft is not visible.
+    juce::Path centreMask;
+    centreMask.addEllipse(cx-9.4f*scale,cy-9.4f*scale,18.8f*scale,18.8f*scale);
+    juce::Graphics::ScopedSaveState safe(g);
+    g.reduceClipRegion(centreMask);
+    const float skullSize=0.66f*scale;
+    g.addTransform(juce::AffineTransform::scale(skullSize).translated(
+        cx-13.5f*skullSize,cy-13.5f*skullSize));
+    skellcore::ui::drawSkullKeyMark(g,0.0f,0.0f,palette.bone,palette.panelHi);
+    if (down)
+    {
+        g.setColour(palette.accent.withAlpha(0.18f));
+        g.fillRect(0.0f,0.0f,27.0f,27.0f);
     }
 }
 
@@ -61,9 +93,13 @@ TopBar::TopBar(SkellFanAudioProcessor& p)
     :processor(p),width(p,"width","",true),mix(p,"mix","",true)
 {
     power.setButtonText({});
+    power.setName("SkellFan power");
+    power.setTooltip("Power bypass (right side)");
+    power.setWantsKeyboardFocus(true);
     power.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     powerAttach=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(p.apvts,"power",power);
     scope.setButtonText({});
+    scope.setTooltip("Show or hide modulation waveform monitor");
     scope.onClick=[this]{if(onScope)onScope();};
     scope.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     for(auto* b:{static_cast<juce::Button*>(&power),static_cast<juce::Button*>(&scope)})
@@ -98,24 +134,26 @@ void TopBar::refreshSkin()
 void TopBar::paint(juce::Graphics& g)
 {
     const auto palette=skellcore::ui::skullPalette(skin);
-    g.fillAll(palette.background);
+    g.fillAll(juce::Colour(0xff080a08));
     g.addTransform(juce::AffineTransform::scale(getWidth()/956.0f,getHeight()/60.0f));
     g.setColour(palette.line);g.fillRect(0,59,956,1);
-    // One-word SKELLFAN label; second half uses the shared SkellCore accent.
-    g.setColour(palette.bone);
-    g.setFont(Theme::font(13.5f,true));
-    g.drawText("SKELL",164,11,44,21,juce::Justification::centredLeft);
-    g.setColour(palette.accent);
-    g.drawText("FAN",207,11,33,21,juce::Justification::centredLeft);
+
+    // One attributed text run: no artificial SKELL / FAN spacing.
+    juce::AttributedString title;
+    title.setJustification(juce::Justification::centredLeft);
+    title.append("SKELL",Theme::font(17.0f,true),palette.bone);
+    title.append("FAN",Theme::font(17.0f,true),palette.accent);
+    title.draw(g,juce::Rectangle<float>{109.0f,9.0f,106.0f,26.0f});
     g.setColour(palette.boneDim);
     g.setFont(Theme::font(9.0f,true));
-    g.drawText("FAN MOD FX",164,32,76,15,juce::Justification::centredLeft);
+    g.drawText("FAN MOD FX",110,35,96,13,juce::Justification::centredLeft);
     g.setColour(palette.line);
-    g.drawVerticalLine(239,13.0f,47.0f);
+    g.drawVerticalLine(208,10.0f,49.0f);
+    g.drawVerticalLine(895,10.0f,49.0f);
     g.setColour(palette.boneDim);
-    g.setFont(Theme::font(15.0f,true));
-    g.drawText("WIDTH",680,11,74,40,juce::Justification::centred);
-    g.drawText("DRY / WET",802,11,92,40,juce::Justification::centred);
+    g.setFont(Theme::font(13.0f,true));
+    g.drawText("WIDTH",632,11,58,36,juce::Justification::centred);
+    g.drawText("DRY/WET",742,11,67,36,juce::Justification::centred);
 }
 void TopBar::resized()
 {
@@ -123,7 +161,10 @@ void TopBar::resized()
     const auto place=[sx,sy](juce::Component& c,int x,int y,int w,int h)
     { c.setBounds(juce::roundToInt(x*sx),juce::roundToInt(y*sy),
                   juce::roundToInt(w*sx),juce::roundToInt(h*sy)); };
-    place(power,9,9,39,42);place(scope,56,9,39,42);
-    place(skull,98,10,62,40);
-    place(width,748,0,48,58);place(mix,897,0,57,58);
+    // Three-blade skull fan is first, Power is the rightmost control.
+    place(skull,7,6,53,47);
+    place(scope,66,9,36,42);
+    place(width,688,1,47,58);
+    place(mix,813,1,51,58);
+    place(power,905,9,43,42);
 }

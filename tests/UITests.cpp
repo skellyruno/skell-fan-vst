@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "../Source/PluginProcessor.h"
 #include "../Source/ui/TopBar.h"
+#include "../Source/ui/Theme.h"
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -80,6 +81,11 @@ void testProcessing(SkellFanAudioProcessor& processor)
 
 void testEditor(SkellFanAudioProcessor& processor)
 {
+    // Start the editor from a real factory preset so the preset bar's
+    // snapshot matches its label. The preceding DSP test intentionally
+    // leaves modified values; otherwise an incorrect (*) appears in
+    // the published preview even after restoring Chorus parameters.
+    processor.loadFactoryPreset(0);
     std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
     check(editor != nullptr,"Editor created");
     if (!editor) return;
@@ -106,7 +112,7 @@ void testEditor(SkellFanAudioProcessor& processor)
         if (auto* top=dynamic_cast<TopBar*>(editor->getChildComponent(i)))
             for (int j=0;j<top->getNumChildComponents();++j)
                 if (auto* child=top->getChildComponent(j))
-                    if (child->getName()=="SkellCore skull theme")
+                    if (child->getName()=="SkellFan fan-skull")
                         skullButton=dynamic_cast<juce::Button*>(child);
     check(skullButton!=nullptr,"SkellCore shared skull toggle exists");
     if (skullButton)
@@ -127,6 +133,55 @@ void testEditor(SkellFanAudioProcessor& processor)
         check(static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))
               ==skinBefore,"SkellCore accent selection wraps back to the default");
     }
+
+    // UI placement is checked against actual JUCE bounds; Power must be
+    // rightmost and the fan/skull control must be first at every size.
+    juce::Button* powerButton=nullptr;
+    TopBar* header=nullptr;
+    for (int i=0;i<editor->getNumChildComponents();++i)
+        if (auto* candidate=dynamic_cast<TopBar*>(editor->getChildComponent(i)))
+        {
+            header=candidate;
+            for (int j=0;j<header->getNumChildComponents();++j)
+                if (auto* child=header->getChildComponent(j))
+                    if (child->getName()=="SkellFan power")
+                        powerButton=dynamic_cast<juce::Button*>(child);
+        }
+    check(powerButton && skullButton,"Power and three-blade fan/skull are clickable");
+    if (powerButton && skullButton && header)
+    {
+        check(skullButton->getX()<powerButton->getX(),
+              "Fan/skull is left of power");
+        check(powerButton->getRight()<=header->getWidth(),
+              "Rightmost power control is inside top bar");
+        const float before=processor.apvts.getRawParameterValue("power")->load();
+        powerButton->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+        check(processor.apvts.getRawParameterValue("power")->load()!=(before>0.5f?1.0f:0.0f),
+              "Rightmost Power button is connected to bypass");
+        powerButton->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+    }
+    const juce::Colour blue(0xff18a9df);
+    const juce::Colour gray(0xff858585);
+    juce::Image preview(juce::Image::ARGB,2,1,true);
+    preview.setPixelAt(0,0,blue);
+    preview.setPixelAt(1,0,gray);
+    const auto green=Theme::greenFanArtwork(preview);
+    check(green.getPixelAt(0,0).getGreen()>green.getPixelAt(0,0).getBlue(),
+          "Blue fan paint is converted to green without changed alpha");
+    check(green.getPixelAt(1,0)==gray,
+          "Neutral chrome artwork remains unchanged");
+
+    // The integration test clicks ROTARY and Power above. Restore the
+    // intended startup preset before screenshots so the displayed factory
+    // name and DSP mode agree, rather than "Chorus - Classic *" / ROTARY.
+    processor.loadFactoryPreset(0);
+    juce::MessageManager::getInstance()->runDispatchLoopUntil(250);
+    check(static_cast<int>(processor.apvts.getRawParameterValue("mode")->load())==3
+          && processor.apvts.state.getProperty("uiPresetName").toString()
+                 =="Chorus - Classic",
+          "Screenshots restore the actual factory Chorus startup state");
 
     const std::array<std::array<int,2>,4> sizes {{{574,590},{765,787},{956,984},{1434,1476}}};
     juce::PNGImageFormat png;

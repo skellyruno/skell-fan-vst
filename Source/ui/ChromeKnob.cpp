@@ -18,7 +18,8 @@ ChromeKnob::ChromeKnob(SkellFanAudioProcessor& p,const juce::String& id,
     setTooltip(id=="syncDiv" ? "HOST SYNC: cycles per note" : caption.isNotEmpty()?caption:id.toUpperCase());
     setDoubleClickReturnValue(true,p.apvts.getParameter(id)->convertFrom0to1(
                                      p.apvts.getParameter(id)->getDefaultValue()));
-    chromeImg=blue?Theme::image(BinaryData::knob_blue_png,BinaryData::knob_blue_pngSize)
+    chromeImg=blue?Theme::greenFanArtwork(Theme::image(
+                      BinaryData::knob_blue_png,BinaryData::knob_blue_pngSize))
                   :Theme::image(BinaryData::knob_chrome_png,BinaryData::knob_chrome_pngSize);
 }
 juce::String ChromeKnob::displayValue() const
@@ -100,7 +101,7 @@ void ChromeKnob::paint(juce::Graphics& g)
     g.strokePath(pointer,juce::PathStrokeType(2.5f*scale));
     if (hasKeyboardFocus(false))
     {
-        g.setColour(juce::Colour(0xff8adeff));
+        g.setColour(Theme::cyan);
         g.drawEllipse(cx-radius-4.5f*scale,cy-radius-4.5f*scale,
                       2.0f*radius+9.0f*scale,2.0f*radius+9.0f*scale,
                       2.0f*scale);
@@ -111,7 +112,7 @@ void ChromeKnob::paint(juce::Graphics& g)
     if (small && name.isEmpty() && !isMouseOverOrDragging())
     {
         // Permanent top-bar Width/Mix percentage rather than hover-only feedback.
-        g.setColour(juce::Colour(0xffcde2ed));
+        g.setColour(juce::Colour(0xffd7f4dc));
         g.setFont(Theme::font(10.0f*scale,true));
         g.drawText(juce::String(juce::roundToInt(getValue())) + "%",
                    juce::Rectangle<float>{0.0f,cy+radius+scale,

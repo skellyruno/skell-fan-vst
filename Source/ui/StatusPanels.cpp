@@ -13,11 +13,11 @@ float toMeter(float level) noexcept
 }
 void frame(juce::Graphics& g, juce::Rectangle<float> r)
 {
-    juce::ColourGradient gradient(juce::Colour(0xff141d25),r.getTopLeft(),
-                                  juce::Colour(0xff05090e),r.getBottomRight(),false);
+    juce::ColourGradient gradient(juce::Colour(0xff101b14),r.getTopLeft(),
+                                  juce::Colour(0xff080c09),r.getBottomRight(),false);
     g.setGradientFill(gradient);
     g.fillRoundedRectangle(r,12.0f);
-    g.setColour(juce::Colour(0xff385161));
+    g.setColour(juce::Colour(0xff31583c));
     g.drawRoundedRectangle(r.reduced(0.5f),11.5f,1.0f);
     g.setColour(juce::Colours::white.withAlpha(0.1f));
     g.drawHorizontalLine(28,12.0f,r.getRight()-12.0f);
@@ -50,7 +50,7 @@ void LiveMeter::paint(juce::Graphics& g)
     g.addTransform(juce::AffineTransform::scale(getWidth()/meterW,getHeight()/meterH));
     frame(g,{0.0f,0.0f,meterW,meterH});
     g.setFont(Theme::font(14.0f,true));
-    g.setColour(juce::Colour(0xffc8e9f5));
+    g.setColour(juce::Colour(0xffd4efdd));
     g.drawText("OUTPUT",12,5,92,20,juce::Justification::centred);
 
     constexpr int segments=21;
@@ -58,7 +58,7 @@ void LiveMeter::paint(juce::Graphics& g)
     for (int ch=0; ch<2; ++ch)
     {
         const float x = 26.0f+ch*43.0f;
-        g.setColour(juce::Colour(0xff9aabb8));
+        g.setColour(juce::Colour(0xffa3b9aa));
         g.setFont(Theme::font(12.0f,true));
         g.drawText(ch==0?"L":"R",juce::Rectangle<float>{x,29.0f,24.0f,13.0f},
                    juce::Justification::centred);
@@ -70,22 +70,22 @@ void LiveMeter::paint(juce::Graphics& g)
             const bool lit=static_cast<float>(i+1)/segments<=on;
             juce::Colour colour = i>=19 ? juce::Colour(0xfff26c60)
                               : i>=16 ? juce::Colour(0xffffca73)
-                                      : juce::Colour(0xff4bbbe8);
+                                      : juce::Colour(0xff56de7a);
             g.setColour(lit?colour:colour.withAlpha(0.10f));
             g.fillRoundedRectangle(x,y,24.0f,3.7f,1.1f);
         }
         if (peak>0.0f)
         {
             const float y=top+(1.0f-peak)*(segments-1)*step;
-            g.setColour(juce::Colour(0xffe7f7ff));
+            g.setColour(juce::Colour(0xffe2f8e8));
             g.fillRoundedRectangle(x-1.0f,y,26.0f,2.0f,0.5f);
         }
         g.setColour(clipHold[static_cast<size_t>(ch)]>0
-                        ?juce::Colour(0xffff6f5e):juce::Colour(0xff3b454e));
+                        ?juce::Colour(0xffff6f5e):juce::Colour(0xff35473b));
         g.fillRoundedRectangle(x+5.0f,154.0f,14.0f,5.0f,2.0f);
     }
     g.setFont(Theme::font(10.0f));
-    g.setColour(juce::Colour(0xff6d96a9));
+    g.setColour(juce::Colour(0xff8aa892));
     g.drawText("−54",9,153,24,11,juce::Justification::left);
     g.drawText("0 dBFS",69,166,40,13,juce::Justification::right);
 }
@@ -120,29 +120,29 @@ void ModeInfo::paint(juce::Graphics& g)
     constexpr const char* modes[]={"VIBRATO","ROTARY","TREMOLO","CHORUS"};
     constexpr const char* sub[]={"PITCH MOTION","DUAL-ROTOR","LEVEL PULSE","3-VOICE SPREAD"};
     constexpr const char* waves[]={"SINE","TRIANGLE","SQUARE","SAW"};
-    g.setColour(juce::Colour(0xff91b0c0));
+    g.setColour(juce::Colour(0xffa5c1ac));
     g.setFont(Theme::font(12.5f,true));
     g.drawText("MODULATION",11,6,133,20,juce::Justification::centred);
-    g.setColour(on?juce::Colour(0xff70c9ee):juce::Colour(0xff86949e));
+    g.setColour(on?juce::Colour(0xff6af589):juce::Colour(0xff86949e));
     g.setFont(Theme::font(19.0f,true));
     g.drawText(on?modes[mode]:"BYPASS",10,37,135,25,juce::Justification::centred);
     g.setColour(juce::Colour(0xffa9b9c3));
     g.setFont(Theme::font(11.5f,true));
     g.drawText(sub[mode],10,66,135,17,juce::Justification::centred);
-    g.setColour(juce::Colour(0xff374d5e));
+    g.setColour(juce::Colour(0xff335844));
     g.drawHorizontalLine(94,13.0f,142.0f);
     g.setColour(juce::Colour(0xff8d9eab));
     g.setFont(Theme::font(11.5f));
     g.drawText("WAVE",15,101,50,17,juce::Justification::left);
-    g.setColour(juce::Colour(0xffd5edf6));
+    g.setColour(juce::Colour(0xffe1f6e6));
     g.drawText(waves[shape],62,101,78,17,juce::Justification::right);
     g.setColour(juce::Colour(0xff8d9eab));
     g.drawText("CLOCK",15,122,50,17,juce::Justification::left);
-    g.setColour(juce::Colour(0xffd5edf6));
+    g.setColour(juce::Colour(0xffe1f6e6));
     g.drawText(host?"HOST":"FREE",62,122,78,17,juce::Justification::right);
-    g.setColour(juce::Colour(0xff3d5b6c));
+    g.setColour(juce::Colour(0xff365a43));
     g.drawHorizontalLine(147,14.0f,142.0f);
-    g.setColour(juce::Colour(0xffc7e8f6));
+    g.setColour(juce::Colour(0xffbcebc8));
     g.setFont(Theme::font(12.5f,true));
     g.drawText(juce::String(processor.displayRate.load(std::memory_order_relaxed),2)+" Hz",
                13,152,128,23,juce::Justification::centred);

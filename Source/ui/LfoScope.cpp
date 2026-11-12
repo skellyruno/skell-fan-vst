@@ -5,7 +5,7 @@ LfoScope::LfoScope(SkellFanAudioProcessor& processor):p(processor)
 void LfoScope::paint(juce::Graphics& g)
 {
     auto r=getLocalBounds().toFloat();
-    g.setColour(juce::Colour(0xff0c1720).withAlpha(.94f));g.fillRoundedRectangle(r,8.0f);
+    g.setColour(juce::Colour(0xff0e1b12).withAlpha(.94f));g.fillRoundedRectangle(r,8.0f);
     g.setColour(Theme::cyan);g.drawRoundedRectangle(r.reduced(1.0f),7.0f,1.5f);
     g.setFont(Theme::font(13.0f,true));g.drawText("LFO MONITOR",12,6,getWidth()-24,20,juce::Justification::centredLeft);
     auto plot=r.reduced(13.0f).withTrimmedTop(22.0f).withTrimmedBottom(17.0f);

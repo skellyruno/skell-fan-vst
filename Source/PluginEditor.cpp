@@ -19,7 +19,7 @@ void SkellFanAudioProcessorEditor::Stage::paint(juce::Graphics& g)
     floor.addColour(0.35,juce::Colour(0xff090b0e));
     g.setGradientFill(floor);g.fillRect(0,585,956,399);
     // Cached ambient light under the fan; no additional bitmap or frame cost.
-    juce::ColourGradient halo(juce::Colour(0xff225579).withAlpha(0.19f),466,376,
+    juce::ColourGradient halo(juce::Colour(0xff225a35).withAlpha(0.19f),466,376,
                               juce::Colours::transparentBlack,810,720,true);
     g.setGradientFill(halo);
     g.fillEllipse(115.0f,67.0f,701.0f,676.0f);
@@ -31,7 +31,7 @@ void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     // Body is a separate static PNG. Plate is intentionally freshly drawn on top
     // so original photographed labels never become mistaken for live controls.
     auto r=Theme::plateRect;
-    g.setColour(juce::Colour(0xff1681bf));g.fillRoundedRectangle(r.expanded(13.0f,9.0f),22.0f);
+    g.setColour(juce::Colour(0xff2ba451));g.fillRoundedRectangle(r.expanded(13.0f,9.0f),22.0f);
     Theme::metal(g,r);
     // Fine horizontal brush strokes.
     g.setColour(juce::Colours::white.withAlpha(0.06f));
@@ -65,15 +65,20 @@ void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     label(g,"TRI",{577,855,31,26},10.0f);
     label(g,"SQR",{687,807,31,26},10.0f);
     label(g,"SAW",{687,853,31,26},10.0f);
-    // Original wordmark; no existing marks are drawn.
-    g.setColour(juce::Colour(0xff2f3338));
-    g.setFont(Theme::font(24.0f,true));
-    g.drawText("SKELL",380,938,98,35,juce::Justification::centredRight);
-    g.setColour(juce::Colour(0xff4cbf72));
-    g.drawText("FAN",478,938,65,35,juce::Justification::centredLeft);
-    g.setColour(juce::Colour(0xff4791ad));
-    g.fillEllipse(345.0f,954.0f,8.0f,8.0f);
-    g.fillEllipse(600.0f,954.0f,8.0f,8.0f);
+    // Proper recessed nameplate covers the uneven moulded plastic and
+    // replaces the old text-over-image treatment. One unbroken wordmark.
+    const juce::Rectangle<float> badge{354.0f,937.0f,248.0f,39.0f};
+    g.setColour(juce::Colour(0xff0b130d).withAlpha(0.94f));
+    g.fillRoundedRectangle(badge,9.0f);
+    g.setColour(juce::Colour(0xff84918a).withAlpha(0.83f));
+    g.drawRoundedRectangle(badge.reduced(0.8f),8.0f,1.3f);
+    g.setColour(juce::Colour(0xff58db78).withAlpha(0.55f));
+    g.drawLine(371.0f,941.0f,585.0f,941.0f,1.0f);
+    juce::AttributedString brand;
+    brand.setJustification(juce::Justification::centred);
+    brand.append("SKELL",Theme::font(24.0f,true),juce::Colour(0xffe6eee8));
+    brand.append("FAN",Theme::font(24.0f,true),juce::Colour(0xff70f18b));
+    brand.draw(g,juce::Rectangle<float>{363.0f,940.0f,230.0f,32.0f});
 }
 
 void SkellFanAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
@@ -93,11 +98,11 @@ void SkellFanAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
     else
         text="MANUAL | "+juce::String(processor.displayRate.load(std::memory_order_relaxed),2)+" Hz";
     auto r=getLocalBounds().toFloat().reduced(1.0f);
-    g.setColour(juce::Colour(0xff111a23).withAlpha(.88f));
+    g.setColour(juce::Colour(0xff0d1b12).withAlpha(.88f));
     g.fillRoundedRectangle(r,6.0f);
-    g.setColour(juce::Colour(0xff469bc0).withAlpha(.62f));
+    g.setColour(juce::Colour(0xff4fd673).withAlpha(.62f));
     g.drawRoundedRectangle(r,6.0f,1.0f);
-    g.setColour(juce::Colour(0xffdaf2fa));
+    g.setColour(juce::Colour(0xffe1f5e6));
     g.setFont(Theme::font(juce::jmax(9.0f,12.0f*getHeight()/23.0f),true));
     g.drawText(text,getLocalBounds().reduced(5,1),juce::Justification::centred);
 }
@@ -117,7 +122,7 @@ SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcesso
         addAndMakeVisible(c);
     fanSwitch.setButtonText("||");
     fanSwitch.setTooltip("Pause the fan animation (does not affect audio)");
-    fanSwitch.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff252b30));
+    fanSwitch.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff18231b));
     fanSwitch.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffeaf1f3));
     fanSwitch.onClick=[this]
     {
@@ -156,7 +161,7 @@ SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcesso
     for(int i=0;i<2;++i)
     {
         syncKeys[i]=std::make_unique<KeyButton>(i==0?"M":"H",
-                   i==0?juce::Colour(0xffa9c4be):juce::Colour(0xffc9a3e8),true);
+                   i==0?juce::Colour(0xff8eb79a):juce::Colour(0xff8ae8a0),true);
         syncKeys[i]->onClick=[this,i]{setChoice(syncChoice,i);};
         syncKeys[i]->setTooltip(i==0?"Manual LFO rate":"Host tempo sync");
         addAndMakeVisible(*syncKeys[i]);
@@ -206,7 +211,7 @@ void SkellFanAudioProcessorEditor::resized()
                  juce::roundToInt(w*sx),juce::roundToInt(h*sy));};
     stage.setBounds(getLocalBounds());fan.setBounds(getLocalBounds());
     plate.setBounds(getLocalBounds());
-    place(top,0,0,956,60);place(presets,242,10,420,38);
+    place(top,0,0,956,60);place(presets,215,10,408,38);
     place(fanSwitch,284,697,36,35);
     place(depth,254,739,203,64);
     const float modeX[]={246,301,354,408};const float modeW[]={51,50,51,49};

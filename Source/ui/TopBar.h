@@ -14,13 +14,13 @@ public:
     void paintButton(juce::Graphics&,bool,bool) override;
 };
 // SkellCore's shared skull geometry; fan artwork and audio controls remain independent.
-class SkullToggle final : public juce::Button
+class FanSkullToggle final : public juce::Button
 {
 public:
-    SkullToggle() : juce::Button("SkellCore skull theme")
+    FanSkullToggle() : juce::Button("SkellFan fan-skull")
     {
         setMouseCursor(juce::MouseCursor::PointingHandCursor);
-        setTooltip("Cycle SkellCore accent: Neon, Ivory, Obsidian, Ossuary");
+        setTooltip("Three-blade SkellFan logo: click to cycle accent themes");
         setWantsKeyboardFocus(true);
     }
     void setSkin(skellcore::ui::SkullSkin next) { selected=next; repaint(); }
@@ -40,7 +40,7 @@ public:
 private:
     SkellFanAudioProcessor& processor;
     skellcore::ui::SkullSkin skin=skellcore::ui::SkullSkin::Neon;
-    SkullToggle skull;
+    FanSkullToggle skull;
     PowerToggle power;
     ScopeToggle scope;
     ChromeKnob width,mix;

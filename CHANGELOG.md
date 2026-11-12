@@ -1,3 +1,21 @@
+# SkellFan v1.8 — fan/skull mark, neon-green UI and smooth HOST sync
+
+- Replaced old skull-key header button with a three-blade vector fan
+  bearing SkellCore's shared skull geometry in the centre.
+- Rearranged header: fan mark far left; Power far right; compact
+  continuous SKELLFAN branding and no overlap with preset browser.
+- Recoloured actual fan-blade/body/hub/miniature knob PNG content
+  from saturated blue to green on load while preserving neutral metal.
+- Restyled blue UI borders, meter, wave labels and mode keys green,
+  retaining red/yellow level warnings and metal highlights.
+- Replaced bare bottom lettering with an inset SKELLFAN nameplate.
+- Added smooth 10ms host subdivision phase correction; transport-seek
+  locking remains immediate and beat-accurate.
+- Expanded UI, source and DSP regression tests; preserved existing
+  VST3 identifiers, preset compatibility and saturation/delay engines.
+
+---
+
 # SkellFan v1.7.0 — SkellCore integration and rename
 
 - Changed JUCE product, CMake targets, VST3/Standalone artifact names,
