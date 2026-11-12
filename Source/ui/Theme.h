@@ -39,10 +39,12 @@ inline juce::Image greenFanArtwork(const juce::Image& source)
             if (colour.getFloatAlpha()>0.04f && sat>0.24f
                 && hue>=0.48f && hue<=0.73f)
             {
-                const float newSat=juce::jlimit(0.0f,1.0f,sat*1.11f);
-                const float newValue=juce::jlimit(0.0f,1.0f,colour.getBrightness()*1.06f);
+                // Retain source luminance/texture and avoid flat, clipped
+                // RGB green: match the mint-neon UI with controlled saturation.
+                const float newSat=juce::jlimit(0.0f,0.82f,sat*0.88f);
+                const float newValue=colour.getBrightness();
                 pixels.setPixelColour(x,y,juce::Colour::fromHSV(
-                    0.33f,newSat,newValue,colour.getFloatAlpha()));
+                    0.36f,newSat,newValue,colour.getFloatAlpha()));
             }
         }
     return result;
