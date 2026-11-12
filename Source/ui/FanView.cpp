@@ -5,6 +5,29 @@ FanView::FanView(SkellFanAudioProcessor& p):processor(p)
 {
     setInterceptsMouseClicks(false,false);
     body=Theme::greenFanArtwork(Theme::image(BinaryData::fan_body_png,BinaryData::fan_body_pngSize));
+    // The source photograph includes an unrelated saturated arc at the foot
+    // of the guard. It used to read as a detached fourth green blade.
+    // Convert ONLY that static lower accent to brushed dark metal; keep the
+    // real animated blades and the green lower housing untouched.
+    if (body.isValid())
+    {
+        juce::Image::BitmapData pixels(body,juce::Image::BitmapData::readWrite);
+        const int left=juce::roundToInt(body.getWidth()*252.0f/Theme::W);
+        const int right=juce::roundToInt(body.getWidth()*708.0f/Theme::W);
+        const int top=juce::roundToInt(body.getHeight()*588.0f/Theme::H);
+        const int bottom=juce::roundToInt(body.getHeight()*707.0f/Theme::H);
+        for (int y=top;y<juce::jmin(bottom,body.getHeight());++y)
+            for (int x=left;x<juce::jmin(right,body.getWidth());++x)
+            {
+                const auto c=pixels.getPixelColour(x,y);
+                if (c.getFloatAlpha()<0.08f || c.getSaturation()<0.30f
+                    || c.getHue()<0.24f || c.getHue()>0.48f)
+                    continue;
+                const float metalValue=juce::jlimit(0.20f,0.65f,c.getBrightness()*0.68f);
+                pixels.setPixelColour(x,y,juce::Colour::fromHSV(
+                    0.36f,0.075f,metalValue,c.getFloatAlpha()));
+            }
+    }
     rotor=Theme::greenFanArtwork(Theme::image(BinaryData::blades_png,BinaryData::blades_pngSize));
     blur=Theme::greenFanArtwork(Theme::image(BinaryData::blades_blur_png,BinaryData::blades_blur_pngSize));
     grille=Theme::image(BinaryData::grille_png,BinaryData::grille_pngSize);
