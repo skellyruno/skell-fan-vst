@@ -31,8 +31,40 @@ void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     // Body is a separate static PNG. Plate is intentionally freshly drawn on top
     // so original photographed labels never become mistaken for live controls.
     auto r=Theme::plateRect;
-    g.setColour(juce::Colour(0xff2ba451));g.fillRoundedRectangle(r.expanded(13.0f,9.0f),22.0f);
+    // Hardware bezel: shaded anodised aluminium rather than a flat
+    // neon-green outline on the fan's physical control deck.
+    const auto bezel=r.expanded(13.0f,9.0f);
+    g.setColour(juce::Colours::black.withAlpha(0.29f));
+    g.fillRoundedRectangle(bezel.translated(2.0f,3.0f),22.0f);
+    juce::ColourGradient rim(juce::Colour(0xff4ea366),bezel.getTopLeft(),
+                            juce::Colour(0xff163d27),bezel.getBottomRight(),false);
+    rim.addColour(0.45,juce::Colour(0xff245e38));
+    g.setGradientFill(rim);
+    g.fillRoundedRectangle(bezel,22.0f);
+    g.setColour(juce::Colour(0xffb2ddbc).withAlpha(0.55f));
+    g.drawRoundedRectangle(bezel.reduced(1.1f),21.0f,1.2f);
+    g.setColour(juce::Colour(0xff071309).withAlpha(0.64f));
+    g.drawRoundedRectangle(r.expanded(5.0f,4.0f),16.0f,1.7f);
     Theme::metal(g,r);
+    // Small machined cross screws are drawn on the outer bezel; they never
+    // obstruct knobs, DEPTH, preset keys, or the engraved bottom nameplate.
+    constexpr std::array<std::array<float,2>,4> screws {{
+        {225.0f,744.0f},{727.0f,744.0f},
+        {225.0f,899.0f},{727.0f,899.0f}
+    }};
+    for (const auto& screw : screws)
+    {
+        const float cx=screw[0],cy=screw[1];
+        g.setColour(juce::Colour(0xff041008).withAlpha(0.7f));
+        g.fillEllipse(cx-5.1f,cy-5.1f,10.2f,10.2f);
+        juce::ColourGradient steel(juce::Colour(0xfff5fff8),cx-3.5f,cy-3.5f,
+                                   juce::Colour(0xff64766a),cx+4.0f,cy+4.0f,false);
+        g.setGradientFill(steel);
+        g.fillEllipse(cx-3.8f,cy-3.8f,7.6f,7.6f);
+        g.setColour(juce::Colour(0xff314038));
+        g.drawLine(cx-2.4f,cy-2.4f,cx+2.4f,cy+2.4f,0.9f);
+        g.drawLine(cx+2.4f,cy-2.4f,cx-2.4f,cy+2.4f,0.9f);
+    }
     // Fine horizontal brush strokes.
     g.setColour(juce::Colours::white.withAlpha(0.06f));
     for(int y=745;y<902;y+=3)g.drawLine(235.0f,static_cast<float>(y),718.0f,static_cast<float>(y),.5f);

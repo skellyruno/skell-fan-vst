@@ -10,22 +10,82 @@ constexpr int presetCount=6;
 constexpr const char* soundParams[]={"mode","depth","rate","syncMode",
     "syncDiv","noteType","wave","saturation","width","mix"};
 }
+void PresetIconButton::paintButton(juce::Graphics& g,bool hover,bool pressed)
+{
+    const auto b=getLocalBounds().toFloat().reduced(0.8f);
+    juce::ColourGradient panel(pressed?juce::Colour(0xff101a14)
+                                     :juce::Colour(0xff233029),b.getTopLeft(),
+                                juce::Colour(0xff090e0b),b.getBottomRight(),false);
+    g.setGradientFill(panel);
+    g.fillRoundedRectangle(b,4.0f);
+    g.setColour(hover || hasKeyboardFocus(false)
+                    ?Theme::cyan.withAlpha(0.8f):juce::Colour(0xff4a6150));
+    g.drawRoundedRectangle(b.reduced(0.4f),3.6f,1.0f);
+    g.setColour(juce::Colours::white.withAlpha(hover?0.18f:0.09f));
+    g.drawHorizontalLine(2,b.getX()+4.0f,b.getRight()-4.0f);
+
+    const float cx=b.getCentreX(),cy=b.getCentreY();
+    const float s=juce::jmin(b.getWidth()/36.0f,b.getHeight()/38.0f);
+    juce::Path symbol;
+    switch(icon)
+    {
+        case Icon::Previous:
+            symbol.startNewSubPath(cx-6*s,cy+3*s);
+            symbol.lineTo(cx,cy-4*s);symbol.lineTo(cx+6*s,cy+3*s);
+            break;
+        case Icon::Next:
+            symbol.startNewSubPath(cx-6*s,cy-3*s);
+            symbol.lineTo(cx,cy+4*s);symbol.lineTo(cx+6*s,cy-3*s);
+            break;
+        case Icon::Save:
+            symbol.addRoundedRectangle(cx-7*s,cy-8*s,14*s,16*s,2*s);
+            symbol.addRectangle(cx-3*s,cy+1*s,7*s,6*s);
+            symbol.startNewSubPath(cx-4*s,cy-8*s);
+            symbol.lineTo(cx-4*s,cy-2*s);
+            symbol.lineTo(cx+3*s,cy-2*s);
+            symbol.lineTo(cx+3*s,cy-8*s);
+            break;
+        case Icon::Remove:
+            symbol.startNewSubPath(cx-5*s,cy-5*s);
+            symbol.lineTo(cx+5*s,cy+5*s);
+            symbol.startNewSubPath(cx+5*s,cy-5*s);
+            symbol.lineTo(cx-5*s,cy+5*s);
+            break;
+        case Icon::Shuffle:
+            symbol.startNewSubPath(cx-8*s,cy-5*s);
+            symbol.cubicTo(cx-1*s,cy-5*s,cx+1*s,cy+5*s,cx+8*s,cy+5*s);
+            symbol.startNewSubPath(cx-8*s,cy+5*s);
+            symbol.cubicTo(cx-1*s,cy+5*s,cx+1*s,cy-5*s,cx+8*s,cy-5*s);
+            symbol.startNewSubPath(cx+4*s,cy-8*s);
+            symbol.lineTo(cx+8*s,cy-5*s);symbol.lineTo(cx+4*s,cy-2*s);
+            symbol.startNewSubPath(cx+4*s,cy+2*s);
+            symbol.lineTo(cx+8*s,cy+5*s);symbol.lineTo(cx+4*s,cy+8*s);
+            break;
+    }
+    g.setColour(hover?juce::Colour(0xffb4ffc6):juce::Colour(0xffd0e8d6));
+    g.strokePath(symbol,juce::PathStrokeType(1.8f*s));
+}
+
 PresetBar::PresetBar(SkellFanAudioProcessor& proc):p(proc)
 {
-    for(auto* b : {&prev,&next,&current,&save,&remove,&shuffle})
+    for(juce::TextButton* b : {static_cast<juce::TextButton*>(&prev),
+                              static_cast<juce::TextButton*>(&next),&current,
+                              static_cast<juce::TextButton*>(&save),
+                              static_cast<juce::TextButton*>(&remove),
+                              static_cast<juce::TextButton*>(&shuffle)})
     {
         addAndMakeVisible(*b);
         b->setColour(juce::TextButton::buttonColourId,juce::Colour(0xff171719));
         b->setColour(juce::TextButton::textColourOffId,juce::Colour(0xffedf1f5));
         b->setMouseCursor(juce::MouseCursor::PointingHandCursor);
     }
-    prev.setButtonText("^");next.setButtonText("v");
+    prev.setButtonText("");next.setButtonText("");
     prev.setTooltip("Previous factory preset");
     next.setTooltip("Next factory preset");
     save.setTooltip("Save a user preset");
     remove.setTooltip("Delete the current user preset");
     shuffle.setTooltip("Randomize sound settings (unsaved)");
-    save.setButtonText("S");remove.setButtonText("X");shuffle.setButtonText("R");
+    save.setButtonText("");remove.setButtonText("");shuffle.setButtonText("");
     current.onClick=[this]{popupMenu();};
     prev.onClick=[this]{chooseFactory((factoryIndex+presetCount-1)%presetCount);};
     next.onClick=[this]{chooseFactory((factoryIndex+1)%presetCount);};

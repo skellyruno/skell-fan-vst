@@ -79,6 +79,13 @@ void FanView::paint(juce::Graphics& g)
     const auto hubRect=Theme::hubRect;
     if(hub.isValid())
         g.drawImage(hub,hubRect,juce::RectanglePlacement::stretchToFit);
+    // Fine, fixed concentric lathe details reinforce the steel bearing.
+    // These sit below the grille and do not rotate with the blades.
+    const auto center=hubRect.getCentre();
+    g.setColour(juce::Colour(0xffeffff1).withAlpha(0.21f));
+    g.drawEllipse(center.x-85.0f,center.y-85.0f,170.0f,170.0f,1.25f);
+    g.setColour(juce::Colour(0xff08120a).withAlpha(0.55f));
+    g.drawEllipse(center.x-78.0f,center.y-78.0f,156.0f,156.0f,1.0f);
     const auto c=Theme::grilleRect;
     if(grille.isValid())
         g.drawImage(grille,c,juce::RectanglePlacement::stretchToFit);

@@ -1,3 +1,33 @@
+# SkellFan v1.9 — hardware polish and audio resilience
+
+SkellFan keeps the original three-blade skull-fan mark, black/neon-green
+finish and all established JUCE parameters. This update improves the
+**actual plugin drawing code**, not an illustrative redesign:
+
+- The control panel uses a shaded anodised-metal bezel with engraved
+  rim and four small cross-head screws instead of a flat green ring.
+- Preset Save, Delete, Shuffle, Previous and Next controls now use
+  custom scale-aware vector symbols, not ambiguous S/X/R letters.
+- OUTPUT meter has calibrated 0/-24/-54 dBFS markings beside the bars,
+  with no collision against the clip indicators.
+- The mode panel's footer shows DRIVE and MIX values instead of repeating
+  the LFO rate already visible on the panel.
+- Subtle fixed lathe highlights refine the fan's metal bearing.
+- Context-menu chrome and the application LookAndFeel now match the
+  dark-green SkellFan hardware palette.
+- A final float-finiteness check protects subsequent plugins and output
+  meters if an extreme signal overflows intermediate DSP math.
+- The JUCE integration test runs actual all-mode NaN/Inf audio input
+  and checks that output buffers and meters remain finite.
+- Static checks pin the visually important icon, bezel, and meter
+  changes to avoid regression.
+
+No new plugin parameters, added audio latency, required external audio
+libraries, or preset migrations. This is not a true-peak limiter and
+does not replace listening and FL Studio compatibility checks.
+
+---
+
 # SkellFan v1.8 — green fan hardware and timing polish
 
 The **SKELLFAN** wordmark is contiguous: SKELL in ivory, FAN in neon

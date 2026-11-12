@@ -46,7 +46,7 @@ private:
     void timerCallback() override;
     void setChoice(juce::ComboBox& choice,int i);
     SkellFanAudioProcessor& processor;
-    BreezeLookAndFeel theme;
+    SkellFanLookAndFeel theme;
     FanView fan;
     TopBar top;
     PresetBar presets;
