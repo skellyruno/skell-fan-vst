@@ -12,7 +12,8 @@ public:
 private:
     void timerCallback() override;
     SkellFanAudioProcessor& processor;
-    juce::Image body,rotor,blur,grille,hub;
+    juce::Image body,rotor,blur,grille;
+    juce::Path skeletonPath,foregroundMask;
     bool enabled=true, lastPowerOn=true;
     double lastTime=0.0,angle=0.0,speed=0.0;
 };

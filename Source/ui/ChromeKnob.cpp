@@ -1,6 +1,5 @@
 #include "ChromeKnob.h"
 #include "Theme.h"
-#include <BinaryData.h>
 #include <cmath>
 #include <cstdlib>
 ChromeKnob::ChromeKnob(SkellFanAudioProcessor& p,const juce::String& id,
@@ -18,9 +17,6 @@ ChromeKnob::ChromeKnob(SkellFanAudioProcessor& p,const juce::String& id,
     setTooltip(id=="syncDiv" ? "HOST SYNC: cycles per note" : caption.isNotEmpty()?caption:id.toUpperCase());
     setDoubleClickReturnValue(true,p.apvts.getParameter(id)->convertFrom0to1(
                                      p.apvts.getParameter(id)->getDefaultValue()));
-    chromeImg=blue?Theme::greenFanArtwork(Theme::image(
-                      BinaryData::knob_blue_png,BinaryData::knob_blue_pngSize))
-                  :Theme::image(BinaryData::knob_chrome_png,BinaryData::knob_chrome_pngSize);
 }
 juce::String ChromeKnob::displayValue() const
 {
@@ -76,58 +72,144 @@ void ChromeKnob::mouseDown(const juce::MouseEvent& e)
         });return;
     }
     juce::Slider::mouseDown(e);
+    beginValueFeedback();
+}
+void ChromeKnob::mouseDrag(const juce::MouseEvent& e)
+{
+    juce::Slider::mouseDrag(e);
+    beginValueFeedback();
+}
+void ChromeKnob::mouseUp(const juce::MouseEvent& e)
+{
+    juce::Slider::mouseUp(e);
+    // The value is intentionally visible only during and briefly after editing.
+    if (showValue) startTimer(650);
+}
+void ChromeKnob::mouseWheelMove(const juce::MouseEvent& e,
+                                const juce::MouseWheelDetails& wheel)
+{
+    juce::Slider::mouseWheelMove(e,wheel);
+    if (wheel.deltaX != 0.0f || wheel.deltaY != 0.0f) beginValueFeedback();
+}
+bool ChromeKnob::keyPressed(const juce::KeyPress& key)
+{
+    const bool handled=juce::Slider::keyPressed(key);
+    if (handled) beginValueFeedback();
+    return handled;
+}
+void ChromeKnob::beginValueFeedback()
+{
+    showValue=true;
+    startTimer(650);
+    repaint();
+}
+void ChromeKnob::timerCallback()
+{
+    if (isMouseButtonDown())
+    {
+        startTimer(650);
+        return;
+    }
+    showValue=false;
+    stopTimer();
+    repaint();
 }
 void ChromeKnob::paint(juce::Graphics& g)
 {
     const auto area=getLocalBounds().toFloat();
     const float scale=juce::jmin(area.getWidth()/(small?52.0f:94.0f),
                                 area.getHeight()/(small?60.0f:111.0f));
-    const float cx=area.getCentreX(),cy=area.getY()+ (small?24.0f:47.0f)*scale;
+    const float cx=area.getCentreX();
+    const float cy=area.getY()+(small?24.0f:47.0f)*scale;
     const float radius=(small?21.0f:38.0f)*scale;
+    if (radius <= 0.0f) return;
     const float f=static_cast<float>(valueToProportionOfLength(getValue()));
     const float angle=juce::MathConstants<float>::pi*(1.25f+1.5f*f);
-    g.setColour(juce::Colours::black.withAlpha(0.35f));
-    g.fillEllipse(cx-radius-3*scale,cy-radius+5*scale,radius*2+6*scale,radius*2+4*scale);
-    if(chromeImg.isValid())
-    {
-        auto tr=juce::AffineTransform::scale(2*radius/chromeImg.getWidth(),2*radius/chromeImg.getHeight())
-            .rotated(angle-2.3f,radius,radius).translated(cx-radius,cy-radius);
-        g.drawImageTransformed(chromeImg,tr);
-    }
-    g.setColour(juce::Colour(0xfff44939));
+
+    // Multi-layer machined hardware. The chrome rim, bevel, recessed face and
+    // reflected light use the same materials for Width, Dry/Wet and every dial.
+    g.setColour(juce::Colours::black.withAlpha(0.58f));
+    g.fillEllipse(cx-radius-2.8f*scale,cy-radius+4.2f*scale,
+                  2.0f*radius+5.6f*scale,2.0f*radius+3.5f*scale);
+    juce::ColourGradient rim(juce::Colour(0xffe7f0ea),cx-radius,cy-radius,
+                             juce::Colour(0xff34423a),cx+radius,cy+radius,false);
+    rim.addColour(0.27,juce::Colour(0xff8eaca0));
+    rim.addColour(0.64,juce::Colour(0xff38463e));
+    g.setGradientFill(rim);
+    g.fillEllipse(cx-radius,cy-radius,2.0f*radius,2.0f*radius);
+    g.setColour(juce::Colour(0xff08100c));
+    g.drawEllipse(cx-radius+1.8f*scale,cy-radius+1.8f*scale,
+                  2.0f*(radius-1.8f*scale),2.0f*(radius-1.8f*scale),1.5f*scale);
+
+    // Deep annular groove and a heavier dark-metal knob cap.
+    const float faceR=radius*0.83f;
+    g.setColour(juce::Colour(0xff050b07));
+    g.fillEllipse(cx-faceR-1.3f*scale,cy-faceR-1.3f*scale,
+                  2.0f*(faceR+1.3f*scale),2.0f*(faceR+1.3f*scale));
+    juce::ColourGradient cap(juce::Colour(0xff71877b),cx-faceR,cy-faceR,
+                             juce::Colour(0xff15211a),cx+faceR,cy+faceR,false);
+    cap.addColour(0.33,juce::Colour(0xff374a3e));
+    cap.addColour(0.69,juce::Colour(0xff111b15));
+    g.setGradientFill(cap);
+    g.fillEllipse(cx-faceR,cy-faceR,2.0f*faceR,2.0f*faceR);
+    g.setColour(juce::Colour(0xffb5d1bb).withAlpha(0.48f));
+    g.drawEllipse(cx-faceR+1.0f*scale,cy-faceR+1.0f*scale,
+                  2.0f*(faceR-1.0f*scale),2.0f*(faceR-1.0f*scale),1.0f*scale);
+
+    // A soft radial reflection adds face curvature instead of a flat texture.
+    const float inset=radius*0.61f;
+    juce::ColourGradient dome(juce::Colour(0xff516b59),cx-inset*0.4f,cy-inset*0.5f,
+                              juce::Colour(0xff080f0b),cx+inset,cy+inset,true);
+    dome.addColour(0.66,juce::Colour(0xff1e3024));
+    g.setGradientFill(dome);
+    g.fillEllipse(cx-inset,cy-inset,2.0f*inset,2.0f*inset);
+    g.setColour(Theme::cyan.withAlpha(isBlue?0.30f:0.21f));
+    g.drawEllipse(cx-inset,cy-inset,2.0f*inset,2.0f*inset,1.05f*scale);
+
+    // The old red needle was the mismatched highlight in the top bar.
+    // Use one restrained neon-green illuminated pointer on every knob.
     juce::Path pointer;
-    pointer.startNewSubPath(cx+std::sin(angle)*radius*.54f,cy-std::cos(angle)*radius*.54f);
-    pointer.lineTo(cx+std::sin(angle)*radius*.84f,cy-std::cos(angle)*radius*.84f);
-    g.strokePath(pointer,juce::PathStrokeType(2.5f*scale));
+    pointer.startNewSubPath(cx+std::sin(angle)*radius*0.47f,
+                            cy-std::cos(angle)*radius*0.47f);
+    pointer.lineTo(cx+std::sin(angle)*radius*0.78f,
+                   cy-std::cos(angle)*radius*0.78f);
+    g.setColour(juce::Colour(0xff021308));
+    g.strokePath(pointer,juce::PathStrokeType(4.0f*scale,
+                  juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+    g.setColour(Theme::cyan.withAlpha(0.20f));
+    g.strokePath(pointer,juce::PathStrokeType(5.0f*scale,
+                  juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+    g.setColour(juce::Colour(0xff81ffa1));
+    g.strokePath(pointer,juce::PathStrokeType(2.0f*scale,
+                  juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+
     if (hasKeyboardFocus(false))
     {
-        g.setColour(Theme::cyan);
-        g.drawEllipse(cx-radius-4.5f*scale,cy-radius-4.5f*scale,
-                      2.0f*radius+9.0f*scale,2.0f*radius+9.0f*scale,
-                      2.0f*scale);
+        g.setColour(Theme::cyan.withAlpha(0.8f));
+        g.drawEllipse(cx-radius-3.0f*scale,cy-radius-3.0f*scale,
+                      2.0f*(radius+3.0f*scale),2.0f*(radius+3.0f*scale),1.3f*scale);
     }
     g.setFont(Theme::font(11.0f*scale,true));
-    g.setColour(isBlue?Theme::label:Theme::label);
-    g.drawText(name,area.withTop(cy+radius+1.0f*scale),juce::Justification::centredTop);
-    if (small && name.isEmpty() && !isMouseOverOrDragging())
+    g.setColour(Theme::label);
+    if (name.isNotEmpty())
+        g.drawText(name,area.withTop(cy+radius+1.0f*scale),
+                   juce::Justification::centredTop);
+
+    // Idle face remains clean: SAT 20%, Width and Mix never stick around.
+    // Value feedback is reserved for direct drag, wheel and keyboard edits.
+    if (showValue)
     {
-        // Permanent top-bar Width/Mix percentage rather than hover-only feedback.
-        g.setColour(juce::Colour(0xffd7f4dc));
-        g.setFont(Theme::font(10.0f*scale,true));
-        g.drawText(juce::String(juce::roundToInt(getValue())) + "%",
-                   juce::Rectangle<float>{0.0f,cy+radius+scale,
-                                          area.getWidth(),14.0f*scale},
-                   juce::Justification::centred);
-    }
-    if(isMouseOverOrDragging())
-    {
-        g.setColour(juce::Colours::black.withAlpha(0.72f));
-        g.fillRoundedRectangle(cx-32*scale,cy-radius-27*scale,64*scale,20*scale,3*scale);
-        g.setColour(juce::Colours::white);
-        g.setFont(Theme::font(12*scale,true));
-        g.drawText(displayValue(),
-                   juce::Rectangle<float>{cx-32.0f*scale,cy-radius-27.0f*scale,
-                                          64.0f*scale,20.0f*scale},
-                   juce::Justification::centred);
+        const auto valueRect=small
+            ? juce::Rectangle<float>{1.0f,area.getBottom()-17.0f*scale,
+                                      area.getWidth()-2.0f,16.0f*scale}
+            : juce::Rectangle<float>{cx-32.0f*scale,cy-radius+8.0f*scale,
+                                      64.0f*scale,19.0f*scale};
+        g.setColour(juce::Colour(0xff051008).withAlpha(0.94f));
+        g.fillRoundedRectangle(valueRect,4.0f*scale);
+        g.setColour(juce::Colour(0xff4aa963).withAlpha(0.68f));
+        g.drawRoundedRectangle(valueRect,4.0f*scale,0.8f*scale);
+        g.setColour(juce::Colour(0xffe5ffeb));
+        g.setFont(Theme::font(juce::jmax(8.0f,10.3f*scale),true));
+        g.drawText(displayValue(),valueRect,juce::Justification::centred);
     }
 }
