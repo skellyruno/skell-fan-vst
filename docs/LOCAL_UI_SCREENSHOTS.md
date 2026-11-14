@@ -16,3 +16,6 @@ xvfb-run -a SkellFanQuick4 --output /tmp/skellfan-quick4
 ```
 
 Use `skellyruno/skellcore-vst-template/tools/quick4_projects.py` as the shared dispatcher. Until a compiler run proves this target with its exact pinned SkellCore revision and four valid screenshots, its status is **wired, NOT verified**. Do not present old CI snapshots as current. Windows/FL Studio/VST3/DSP tests remain independent.
+
+## 2026-11-13 local test results
+A real Linux JUCE `SkellFanQuick4` executable built and ran successfully, returning **4/4 screenshots, zero errors, 2.89 seconds** for capture (not compilation). Verified `main_default`, `rotary_controls`, real audio-driven `active_processing`, and `theme_alternate`. The initial alternate scene showed no theme change; fixed the source to invoke the existing skull `onClick` callback and verified its header image differs at the pixel level. **IMPORTANT:** This local compiler test used a *compatible* shared SkellCore source checkout rather than the plugin's exact pinned commit `05191f3cfade5a57c1eb97576cce6a348705222c`. Don't call the pinned-release appearance certified until the exact pinned shared dependency is tested. Windows VST3 tests remain separate.
