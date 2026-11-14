@@ -1,0 +1,28 @@
+name: One-time SkellFan local source transfer
+# No screenshots are rendered in GitHub Actions. This transfers source bytes
+# once into a restricted Linux environment that has no network access.
+on:
+  push:
+    paths:
+      - '.github/workflows/bootstrap-quick4-source.yml'
+  workflow_dispatch:
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Archive exact source code and original assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive HEAD -o SkellFan-local-source.tar
+          gzip -n SkellFan-local-source.tar
+          git rev-parse HEAD > source-commit.txt
+      - uses: actions/upload-artifact@v6
+        with:
+          name: SkellFan-one-time-offline-source
+          path: |
+            SkellFan-local-source.tar.gz
+            source-commit.txt
+          retention-days: 7
+          if-no-files-found: error
