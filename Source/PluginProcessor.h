@@ -44,7 +44,10 @@ public:
     std::array<std::atomic<float>, 2> displayPeak {{0.0f, 0.0f}};
     std::atomic<uint64_t> meterFrame {0};
     void loadFactoryPreset(int index);
+    void setMotionPaused(bool paused);
+    bool isMotionPaused() const noexcept { return motionPaused.load(std::memory_order_relaxed); }
 private:
+    std::atomic<bool> motionPaused {false};
     skellcore::TempoClock tempoClock;
     breeze::dsp::Lfo lfo;
     breeze::dsp::ModDelay vibratoDelay, chorusDelay, dryDelay;

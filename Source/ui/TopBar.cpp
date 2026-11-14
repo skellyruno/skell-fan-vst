@@ -7,13 +7,14 @@ void PowerToggle::paintButton(juce::Graphics& g,bool hover,bool down)
     auto r=getLocalBounds().toFloat().reduced(1.5f);
     g.setColour(juce::Colour(0xff191a1c).brighter(hover?0.12f:0.0f));
     g.fillRoundedRectangle(r,5.0f);
-    const float cx=r.getCentreX(),cy=r.getCentreY(),radius=11.5f;
+    const float cx=r.getCentreX(),cy=r.getCentreY();
+    const float radius=juce::jmin(r.getWidth(),r.getHeight())*0.24f;
     juce::Path powerSymbol;
     powerSymbol.addCentredArc(cx,cy+1.0f,radius,radius,0,
         juce::MathConstants<float>::pi*.27f,juce::MathConstants<float>::pi*1.73f,true);
     g.setColour(getToggleState()?Theme::cyan:juce::Colour(0xffb8b9bd));
     g.strokePath(powerSymbol,juce::PathStrokeType(2.9f));
-    g.drawLine(cx,cy-13,cx,cy+1,2.9f);
+    g.drawLine(cx,cy-radius-1.0f,cx,cy+0.2f,2.4f);
     if(down){g.setColour(juce::Colours::white.withAlpha(.06f));g.fillRoundedRectangle(r,5);}
 }
 void ScopeToggle::paintButton(juce::Graphics& g,bool hover,bool down)
@@ -166,5 +167,5 @@ void TopBar::resized()
     place(scope,66,9,36,42);
     place(width,688,1,47,58);
     place(mix,813,1,51,58);
-    place(power,905,9,43,42);
+    place(power,909,12,35,35);
 }

@@ -92,6 +92,12 @@ void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     g.setColour(juce::Colour(0xff071309).withAlpha(0.64f));
     g.drawRoundedRectangle(r.expanded(5.0f,4.0f),16.0f,1.7f);
     Theme::metal(g,r);
+    // Mask the photographed SAT control artifact, leaving the real knob above.
+    const juce::Rectangle<float> satHousing{639.0f,614.0f,77.0f,87.0f};
+    g.setColour(juce::Colour(0xff070d09).withAlpha(0.97f));
+    g.fillRoundedRectangle(satHousing,12.0f);
+    g.setColour(juce::Colour(0xff517d5d).withAlpha(0.82f));
+    g.drawRoundedRectangle(satHousing.reduced(1.0f),11.0f,1.5f);
     // Small machined cross screws are drawn on the outer bezel; they never
     // obstruct knobs, DEPTH, preset keys, or the engraved bottom nameplate.
     constexpr std::array<std::array<float,2>,4> screws {{
@@ -175,6 +181,7 @@ void SkellFanAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
     }
     else
         text="MANUAL | "+juce::String(processor.displayRate.load(std::memory_order_relaxed),2)+" Hz";
+    if(processor.isMotionPaused()) text="PAUSED | RATE SAVED";
     auto r=getLocalBounds().toFloat().reduced(1.0f);
     g.setColour(juce::Colour(0xff0d1b12).withAlpha(.88f));
     g.fillRoundedRectangle(r,6.0f);
@@ -199,26 +206,26 @@ SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcesso
                  static_cast<juce::Component*>(&wave),static_cast<juce::Component*>(&saturation)})
         addAndMakeVisible(c);
     fanSwitch.setButtonText("||");
-    fanSwitch.setTooltip("Pause the fan animation (does not affect audio)");
+    fanSwitch.setTooltip("Pause fan animation AND audio modulation (keeps Rate setting)");
     fanSwitch.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     fanSwitch.setWantsKeyboardFocus(true);
     fanSwitch.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff18231b));
     fanSwitch.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffeaf1f3));
     fanSwitch.onClick=[this]
     {
-        bool enabled=static_cast<bool>(processor.apvts.state.getProperty("uiFanAnimation",true));
-        enabled=!enabled;
-        processor.apvts.state.setProperty("uiFanAnimation",enabled,nullptr);
-        fan.setAnimationEnabled(enabled);
-        fanSwitch.setButtonText(enabled?"||":">");
+        const bool paused=!processor.isMotionPaused();
+        processor.setMotionPaused(paused);
+        fan.setAnimationEnabled(!paused);
+        fanSwitch.setButtonText(paused?">":"||");
+        rateReadout.repaint();
     };
     addAndMakeVisible(fanSwitch);
     addAndMakeVisible(rateReadout);
     addAndMakeVisible(outputMeter);
     addAndMakeVisible(modeInfo);
-    const bool initialAnimation=static_cast<bool>(p.apvts.state.getProperty("uiFanAnimation",true));
-    fan.setAnimationEnabled(initialAnimation);
-    fanSwitch.setButtonText(initialAnimation?"||":">");
+    const bool initiallyPaused=p.isMotionPaused();
+    fan.setAnimationEnabled(!initiallyPaused);
+    fanSwitch.setButtonText(initiallyPaused?">":"||");
     scope.setVisible(static_cast<bool>(p.apvts.state.getProperty("uiScopeVisible",false)));
     addChildComponent(scope);
     top.onScope=[this]
@@ -264,8 +271,8 @@ SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcesso
     constrainer.setFixedAspectRatio(static_cast<double>(Theme::W)/Theme::H);
     setConstrainer(&constrainer);
     setResizable(true,true);
-    setSize(static_cast<int>(p.apvts.state.getProperty("uiWidth",956)),
-            static_cast<int>(p.apvts.state.getProperty("uiHeight",984)));
+    setSize(static_cast<int>(p.apvts.state.getProperty("uiWidth",574)),
+            static_cast<int>(p.apvts.state.getProperty("uiHeight",590)));
     // Hide the inactive RATE dial immediately (before the first 30 Hz timer).
     const bool hostInitiallySelected =
         p.apvts.getRawParameterValue("syncMode")->load(std::memory_order_relaxed) > 0.5f;

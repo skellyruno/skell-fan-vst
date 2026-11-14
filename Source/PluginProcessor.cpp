@@ -17,10 +17,12 @@ SkellFanAudioProcessor::SkellFanAudioProcessor()
 {
     apvts.state.setProperty("uiPresetName","Chorus - Classic",nullptr);
     apvts.state.setProperty("uiFanAnimation",true,nullptr);
+    apvts.state.setProperty("uiAudioMotionPaused",false,nullptr);
     apvts.state.setProperty("uiScopeVisible",false,nullptr);
     apvts.state.setProperty("uiSkullSkin",1,nullptr);
-    apvts.state.setProperty("uiWidth",765,nullptr);
-    apvts.state.setProperty("uiHeight",787,nullptr);
+    // 25 percent smaller than the previous 765 x 787 default.
+    apvts.state.setProperty("uiWidth",574,nullptr);
+    apvts.state.setProperty("uiHeight",590,nullptr);
 }
 
 APVTS::ParameterLayout SkellFanAudioProcessor::makeLayout()
@@ -186,10 +188,12 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
     lastBlockSamples=n;
     lastHostBpm=bpm;
     wasTransportPlaying=transportPlaying;
-    wasHostSynced=hostSync;
+    wasHostSynced=hostSync && !motionPaused.load(std::memory_order_relaxed);
     lastSyncDivision=syncDiv;
     lastNoteType=noteType;
-    lfo.setFrequency(hz,hostSync);
+    // Stop modulation without changing the automated Rate or sync parameters.
+    const bool paused=motionPaused.load(std::memory_order_relaxed);
+    lfo.setFrequency(paused?0.0:hz,hostSync && !paused);
     // Keep all delay histories warm, but skip the expensive interpolation for
     // modes absent from the current/fading mix.
     const auto& weightsAtBlockStart=modeFader.current();
@@ -350,6 +354,13 @@ void SkellFanAudioProcessor::loadFactoryPreset(int i)
     }
     apvts.state.setProperty("uiPresetName",z.name,nullptr);
 }
+void SkellFanAudioProcessor::setMotionPaused(bool paused)
+{
+    // Only the message thread writes ValueTree state; the DSP reads an atomic.
+    motionPaused.store(paused,std::memory_order_release);
+    apvts.state.setProperty("uiAudioMotionPaused",paused,nullptr);
+    apvts.state.setProperty("uiFanAnimation",!paused,nullptr);
+}
 void SkellFanAudioProcessor::getStateInformation(juce::MemoryBlock& data)
 {
     if(auto xml=apvts.copyState().createXml())copyXmlToBinary(*xml,data);
@@ -358,7 +369,13 @@ void SkellFanAudioProcessor::setStateInformation(const void* data,int size)
 {
     if(auto xml=getXmlFromBinary(data,size))
         if(xml->hasTagName(apvts.state.getType().toString()))
+        {
             apvts.replaceState(juce::ValueTree::fromXml(*xml));
+            motionPaused.store(static_cast<bool>(apvts.state.getProperty(
+                "uiAudioMotionPaused",
+                !static_cast<bool>(apvts.state.getProperty("uiFanAnimation",true)))),
+                std::memory_order_release);
+        }
 }
 juce::AudioProcessorEditor* SkellFanAudioProcessor::createEditor()
 {return new SkellFanAudioProcessorEditor(*this);}

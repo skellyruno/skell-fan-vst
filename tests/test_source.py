@@ -88,7 +88,7 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('modeInfo.refresh()', editor)
         self.assertIn('StatusPanels.cpp', cmake)
         self.assertIn('smoothingTests()', tests)
-        self.assertRegex(processor, r'setProperty\("uiWidth",765,nullptr\)')
+        self.assertRegex(processor, r'setProperty\("uiWidth",574,nullptr\)')
 
     def test_v15_input_safety_and_sync_plates(self):
         processor = (ROOT / 'Source/PluginProcessor.cpp').read_text(encoding='utf-8')
@@ -181,7 +181,7 @@ class SourceSanity(unittest.TestCase):
         lfo=(ROOT / 'Source/dsp/Lfo.h').read_text(encoding='utf-8')
         dsp=(ROOT / 'tests/DSPTests.cpp').read_text(encoding='utf-8')
         self.assertIn('place(skull,7,6,53,47)',top)
-        self.assertIn('place(power,905,9,43,42)',top)
+        self.assertIn('place(power,909,12,35,35)',top)
         self.assertIn('place(presets,215,10,408,38)',editor)
         self.assertIn('SkellFan fan-skull',top_h)
         self.assertIn('drawSkullKeyMark',top)
@@ -252,6 +252,15 @@ class SourceSanity(unittest.TestCase):
         self.assertNotIn('if(hub.isValid())', fan)
         self.assertIn('juce::Path skeletonPath,foregroundMask', fan_h)
         self.assertIn('const double target=(enabled&&powerOn)', fan)
+
+    def test_pause_motion_and_compact_default(self):
+        proc=(ROOT/'Source/PluginProcessor.cpp').read_text(encoding='utf-8')
+        editor=(ROOT/'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        self.assertIn('lfo.setFrequency(paused?0.0:hz',proc)
+        self.assertIn('processor.setMotionPaused(paused)',editor)
+        self.assertIn('PAUSED | RATE SAVED',editor)
+        self.assertIn('satHousing',editor)
+        self.assertIn('setProperty("uiWidth",574,nullptr)',proc)
 
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')
