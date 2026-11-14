@@ -110,7 +110,9 @@ int main(int argc,char** argv) {
         for(int tries=0;tries<4;++tries) {
             const auto skin=static_cast<int>(p.apvts.state.getProperty("uiSkullSkin",1));
             if(skin==1)break;
-            if(auto* skull=findSkull(*editor))skull->triggerClick();
+            if(auto* skull=findSkull(*editor)) {
+                if(skull->onClick) skull->onClick();
+            }
         }
         bool ok=true;
         if(scene.kind==1) {
@@ -122,11 +124,17 @@ int main(int argc,char** argv) {
                 && setParameter(p,"mix",80.f);
             driveRealAudio(p);
         } else if(scene.kind==3) {
-            if(auto* skull=findSkull(*editor))skull->triggerClick();
+            if(auto* skull=findSkull(*editor)) {
+                if(skull->onClick) skull->onClick();
+                else ok=false;
+            }
             else ok=false;
         } else if(scene.kind==4) {
             ok=setParameter(p,"mode",0.f);
         }
+        if(scene.kind==3
+            && static_cast<int>(p.apvts.state.getProperty("uiSkullSkin",1))==1)
+            ok=false;  // Theme callback never changed the shared skull palette.
         if(!ok){++failures;break;}
         editor->setSize(scene.width,scene.height);
         editor->resized();
