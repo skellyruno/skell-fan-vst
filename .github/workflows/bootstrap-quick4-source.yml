@@ -1,10 +1,8 @@
 name: One-time SkellFan local source transfer
 # No screenshots are rendered in GitHub Actions. This transfers source bytes
 # once into a restricted Linux environment that has no network access.
+# One-time source transfer completed. Manual-only fallback.
 on:
-  push:
-    paths:
-      - '.github/workflows/bootstrap-quick4-source.yml'
   workflow_dispatch:
 jobs:
   source:
