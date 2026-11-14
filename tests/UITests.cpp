@@ -153,6 +153,8 @@ void testEditor(SkellFanAudioProcessor& processor)
     std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
     check(editor != nullptr,"Editor created");
     if (!editor) return;
+    check(editor->getWidth()==574 && editor->getHeight()==590,
+          "New editor starts at 25-percent smaller default");
 
     // Buttons are actual JUCE children, not a mock layout.
     juce::Button* rotaryButton=nullptr;
@@ -184,8 +186,13 @@ void testEditor(SkellFanAudioProcessor& processor)
         const float depthBefore=processor.apvts.getRawParameterValue("depth")->load();
         const int skinBefore=static_cast<int>(
             processor.apvts.state.getProperty("uiSkullSkin",1));
+        const auto imageBefore=editor->createComponentSnapshot(editor->getLocalBounds(),true);
         skullButton->triggerClick();
         juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+        const auto imageAfter=editor->createComponentSnapshot(editor->getLocalBounds(),true);
+        check(imageBefore.isValid() && imageAfter.isValid()
+              && imageBefore.getPixelAt(150,2)!=imageAfter.getPixelAt(150,2),
+              "Theme button visibly changes rendered top-bar palette");
         check(static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))
               ==(skinBefore+1)%4,"Clicking shared skull cycles accent skin");
         check(processor.apvts.getRawParameterValue("depth")->load()==depthBefore,
@@ -226,8 +233,8 @@ void testEditor(SkellFanAudioProcessor& processor)
         powerButton->triggerClick();
         juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
     }
-    // The motor-animation switch is UI only; it must never bypass or
-    // change the plugin's audio parameters.
+    // The motion switch pauses audio modulation and fan animation,
+    // but never changes Rate automation or audio bypass.
     FanMotionButton* animationSwitch=nullptr;
     for(int i=0;i<editor->getNumChildComponents();++i)
         if(auto* child=dynamic_cast<FanMotionButton*>(editor->getChildComponent(i)))
@@ -238,11 +245,17 @@ void testEditor(SkellFanAudioProcessor& processor)
         const bool initial=static_cast<bool>(
             processor.apvts.state.getProperty("uiFanAnimation",true));
         const float powerBefore=processor.apvts.getRawParameterValue("power")->load();
+        const float rateBefore=processor.apvts.getRawParameterValue("rate")->load();
+        const bool pauseBefore=processor.isMotionPaused();
         animationSwitch->triggerClick();
         juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
         check(static_cast<bool>(processor.apvts.state.getProperty(
                   "uiFanAnimation",true))!=initial,
-              "Animation button changes only the fan's motion");
+              "Motion button changes fan animation state");
+        check(processor.isMotionPaused()!=pauseBefore,
+              "Motion button toggles real DSP modulation pause");
+        check(processor.apvts.getRawParameterValue("rate")->load()==rateBefore,
+              "Motion button does not overwrite Rate automation");
         check(processor.apvts.getRawParameterValue("power")->load()==powerBefore,
               "Animation switch does not modify audio bypass");
         animationSwitch->triggerClick();
