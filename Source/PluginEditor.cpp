@@ -228,6 +228,8 @@ SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcesso
     fanSwitch.setButtonText(initiallyPaused?">":"||");
     scope.setVisible(static_cast<bool>(p.apvts.state.getProperty("uiScopeVisible",false)));
     addChildComponent(scope);
+    top.onThemeChanged=[this]{applyTheme();};
+    applyTheme();
     top.onScope=[this]
     {
         const bool enabled=!scope.isVisible();
@@ -287,6 +289,17 @@ SkellFanAudioProcessorEditor::~SkellFanAudioProcessorEditor()
     stopTimer();
     setConstrainer(nullptr);
     setLookAndFeel(nullptr);
+}
+void SkellFanAudioProcessorEditor::applyTheme()
+{
+    const auto skin=skellcore::ui::skinFromIndex(
+        static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1)));
+    theme.setSkin(skin);
+    fan.setSkin(skin);
+    plate.repaint();
+    presets.repaint();
+    rateReadout.repaint();
+    repaint();
 }
 void SkellFanAudioProcessorEditor::setChoice(juce::ComboBox& combo,int value)
 {combo.setSelectedId(value+1,juce::sendNotificationSync);}

@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <SkellCore/SkullTheme.h>
 namespace Theme
 {
 constexpr float W=956.0f,H=984.0f;
@@ -50,6 +51,24 @@ inline juce::Image greenFanArtwork(const juce::Image& source)
     return result;
 }
 
+// Cached UI-only accent conversion; no audio-thread image processing.
+inline juce::Image fanArtworkForSkin(const juce::Image& source,skellcore::ui::SkullSkin skin)
+{
+    auto result=greenFanArtwork(source);
+    if(!result.isValid() || skin==skellcore::ui::SkullSkin::Neon) return result;
+    const auto accent=skellcore::ui::skullPalette(skin).accent;
+    juce::Image::BitmapData pixels(result,juce::Image::BitmapData::readWrite);
+    for(int y=0;y<result.getHeight();++y)
+        for(int x=0;x<result.getWidth();++x)
+        {
+            const auto c=pixels.getPixelColour(x,y);
+            if(c.getFloatAlpha()<0.05f || c.getSaturation()<0.25f
+               || c.getHue()<0.26f || c.getHue()>0.45f) continue;
+            pixels.setPixelColour(x,y,juce::Colour::fromHSV(accent.getHue(),
+                juce::jmin(0.88f,accent.getSaturation()),c.getBrightness(),c.getFloatAlpha()));
+        }
+    return result;
+}
 inline void metal(juce::Graphics& g,juce::Rectangle<float> r)
 {
     juce::ColourGradient gradient(juce::Colour(0xffe0e1e3),r.getTopLeft(),

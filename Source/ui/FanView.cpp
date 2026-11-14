@@ -4,36 +4,12 @@
 FanView::FanView(SkellFanAudioProcessor& p):processor(p)
 {
     setInterceptsMouseClicks(false,false);
-    body=Theme::greenFanArtwork(Theme::image(BinaryData::fan_body_png,BinaryData::fan_body_pngSize));
-    // The source photograph includes an unrelated saturated arc at the foot
-    // of the guard. It used to read as a detached fourth green blade.
-    // Convert ONLY that static lower accent to brushed dark metal; keep the
-    // real animated blades and the green lower housing untouched.
-    if (body.isValid())
-    {
-        juce::Image::BitmapData pixels(body,juce::Image::BitmapData::readWrite);
-        const int left=juce::roundToInt(body.getWidth()*252.0f/Theme::W);
-        const int right=juce::roundToInt(body.getWidth()*708.0f/Theme::W);
-        const int top=juce::roundToInt(body.getHeight()*588.0f/Theme::H);
-        const int bottom=juce::roundToInt(body.getHeight()*707.0f/Theme::H);
-        for (int y=top;y<juce::jmin(bottom,body.getHeight());++y)
-            for (int x=left;x<juce::jmin(right,body.getWidth());++x)
-            {
-                const auto c=pixels.getPixelColour(x,y);
-                if (c.getFloatAlpha()<0.08f) continue;
-                // Fully neutralize every static under-guard pixel. The
-                // previous hue gate left green low-saturation antialiasing
-                // specks and made the arc appear dusty in HiDPI snapshots.
-                const float metalValue=c.getSaturation()>0.08f
-                    ? juce::jlimit(0.16f,0.67f,c.getBrightness()*0.68f)
-                    : c.getBrightness();
-                pixels.setPixelColour(x,y,juce::Colour::fromHSV(
-                    0.0f,0.0f,metalValue,c.getFloatAlpha()));
-            }
-    }
-    rotor=Theme::greenFanArtwork(Theme::image(BinaryData::blades_png,BinaryData::blades_pngSize));
-    blur=Theme::greenFanArtwork(Theme::image(BinaryData::blades_blur_png,BinaryData::blades_blur_pngSize));
+    rawBody=Theme::image(BinaryData::fan_body_png,BinaryData::fan_body_pngSize);
+    rawRotor=Theme::image(BinaryData::blades_png,BinaryData::blades_pngSize);
+    rawBlur=Theme::image(BinaryData::blades_blur_png,BinaryData::blades_blur_pngSize);
     grille=Theme::image(BinaryData::grille_png,BinaryData::grille_pngSize);
+    setSkin(skellcore::ui::skinFromIndex(
+        static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))));
     // Build one compact skeletal path: no SVG decoding or path allocation at 60 Hz.
     // Skull, jaw, collar bones, rib cage, pelvis and limb segments share one vector.
     skeletonPath.addEllipse(-8.0f,-33.0f,16.0f,17.0f);
@@ -80,6 +56,43 @@ FanView::FanView(SkellFanAudioProcessor& p):processor(p)
     foregroundMask.closeSubPath();
     lastTime=juce::Time::getMillisecondCounterHiRes();
     startTimerHz(60);
+}
+void FanView::setSkin(skellcore::ui::SkullSkin skin)
+{
+    const int index=static_cast<int>(skin);
+    if(index==skinIndex) return;
+    skinIndex=index;
+    body=Theme::fanArtworkForSkin(rawBody,skin);
+    // The source photograph includes an unrelated saturated arc at the foot
+    // of the guard. It used to read as a detached fourth green blade.
+    // Convert ONLY that static lower accent to brushed dark metal; keep the
+    // real animated blades and the green lower housing untouched.
+    if (body.isValid())
+    {
+        juce::Image::BitmapData pixels(body,juce::Image::BitmapData::readWrite);
+        const int left=juce::roundToInt(body.getWidth()*252.0f/Theme::W);
+        const int right=juce::roundToInt(body.getWidth()*708.0f/Theme::W);
+        const int top=juce::roundToInt(body.getHeight()*588.0f/Theme::H);
+        const int bottom=juce::roundToInt(body.getHeight()*707.0f/Theme::H);
+        for (int y=top;y<juce::jmin(bottom,body.getHeight());++y)
+            for (int x=left;x<juce::jmin(right,body.getWidth());++x)
+            {
+                const auto c=pixels.getPixelColour(x,y);
+                if (c.getFloatAlpha()<0.08f) continue;
+                // Fully neutralize every static under-guard pixel. The
+                // previous hue gate left green low-saturation antialiasing
+                // specks and made the arc appear dusty in HiDPI snapshots.
+                const float metalValue=c.getSaturation()>0.08f
+                    ? juce::jlimit(0.16f,0.67f,c.getBrightness()*0.68f)
+                    : c.getBrightness();
+                pixels.setPixelColour(x,y,juce::Colour::fromHSV(
+                    0.0f,0.0f,metalValue,c.getFloatAlpha()));
+            }
+    }
+
+    rotor=Theme::fanArtworkForSkin(rawRotor,skin);
+    blur=Theme::fanArtworkForSkin(rawBlur,skin);
+    repaint();
 }
 void FanView::setAnimationEnabled(bool b)
 {

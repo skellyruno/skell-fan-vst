@@ -2,20 +2,39 @@
 #include "Theme.h"
 SkellFanLookAndFeel::SkellFanLookAndFeel()
 {
-    setColour(juce::PopupMenu::backgroundColourId,juce::Colour(0xff0e1711));
-    setColour(juce::PopupMenu::textColourId,juce::Colours::white);
-    setColour(juce::PopupMenu::highlightedBackgroundColourId,Theme::deepBlue);
-    setColour(juce::TextEditor::backgroundColourId,juce::Colour(0xff142119));
-    setColour(juce::TextEditor::textColourId,juce::Colours::white);
+    setSkin(skellcore::ui::SkullSkin::Neon);
+}
+void SkellFanLookAndFeel::setSkin(skellcore::ui::SkullSkin selected)
+{
+    skin=selected;
+    const auto palette=skellcore::ui::skullPalette(skin);
+    setColour(juce::PopupMenu::backgroundColourId,palette.panel);
+    setColour(juce::PopupMenu::textColourId,palette.bone);
+    setColour(juce::PopupMenu::headerTextColourId,palette.accent);
+    setColour(juce::PopupMenu::highlightedBackgroundColourId,palette.panelHi);
+    setColour(juce::PopupMenu::highlightedTextColourId,palette.bone);
+    setColour(juce::TextEditor::backgroundColourId,palette.panelHi);
+    setColour(juce::TextEditor::textColourId,palette.bone);
+    setColour(juce::TextEditor::outlineColourId,palette.line);
+    setColour(juce::TextEditor::focusedOutlineColourId,palette.accent);
+    setColour(juce::AlertWindow::backgroundColourId,palette.panel);
+    setColour(juce::AlertWindow::textColourId,palette.bone);
+    setColour(juce::AlertWindow::outlineColourId,palette.line);
+    setColour(juce::TextButton::buttonColourId,palette.panelHi);
+    setColour(juce::TextButton::buttonOnColourId,palette.accent);
+    setColour(juce::TextButton::textColourOffId,palette.bone);
+}
+juce::Font SkellFanLookAndFeel::getPopupMenuFont()
+{
+    return Theme::font(14.0f,true);
 }
 void SkellFanLookAndFeel::drawPopupMenuBackground(juce::Graphics& g,int w,int h)
 {
-    const juce::Rectangle<float> area{0.0f,0.0f,static_cast<float>(w),
-                                      static_cast<float>(h)};
-    juce::ColourGradient panel(juce::Colour(0xff1d2b21),area.getTopLeft(),
-                               juce::Colour(0xff080d0a),area.getBottomRight(),false);
+    const auto palette=skellcore::ui::skullPalette(skin);
+    const juce::Rectangle<float> rect{0.0f,0.0f,static_cast<float>(w),static_cast<float>(h)};
+    juce::ColourGradient panel(palette.panelHi,rect.getTopLeft(),palette.background,rect.getBottomRight(),false);
     g.setGradientFill(panel);
-    g.fillRect(area);
-    g.setColour(juce::Colour(0xff426349).withAlpha(0.8f));
+    g.fillRect(rect);
+    g.setColour(palette.accent.withAlpha(0.65f));
     g.drawRect(0,0,w,h,1);
 }

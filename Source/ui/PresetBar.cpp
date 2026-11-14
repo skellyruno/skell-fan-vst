@@ -1,5 +1,23 @@
 #include "PresetBar.h"
 #include "Theme.h"
+#include "LookAndFeel.h"
+namespace {
+class FanPresetDialog final : public juce::AlertWindow
+{
+public:
+    FanPresetDialog(const juce::String& title,const juce::String& body,
+                    skellcore::ui::SkullSkin skin)
+        : juce::AlertWindow(title,body,juce::MessageBoxIconType::NoIcon)
+    {
+        style.setSkin(skin);
+        setLookAndFeel(&style);
+    }
+    ~FanPresetDialog() override { setLookAndFeel(nullptr); }
+private:
+    SkellFanLookAndFeel style;
+};
+}
+
 #include <cmath>
 namespace
 {
@@ -83,7 +101,7 @@ PresetBar::PresetBar(SkellFanAudioProcessor& proc):p(proc)
     prev.setTooltip("Previous factory preset");
     next.setTooltip("Next factory preset");
     save.setTooltip("Save a user preset");
-    remove.setTooltip("Delete the current user preset");
+    remove.setTooltip("Delete saved user preset (factory presets protected)");
     shuffle.setTooltip("Randomize sound settings (unsaved)");
     save.setButtonText("");remove.setButtonText("");shuffle.setButtonText("");
     current.onClick=[this]{popupMenu();};
@@ -120,6 +138,8 @@ void PresetBar::timerCallback()
     const auto caption=text+(isModified()?"  *":"");
     if(current.getButtonText()!=caption)current.setButtonText(caption);
     current.setTooltip(isModified()?"Unsaved parameter changes. Save to keep them.":"Select or save a preset");
+    const auto saved=folder().getChildFile(juce::File::createLegalFileName(text)+".xml");
+    remove.setEnabled(saved.existsAsFile());
 }
 juce::String PresetBar::name() const
 {return p.apvts.state.getProperty("uiPresetName","Chorus - Classic").toString();}
@@ -159,6 +179,7 @@ bool PresetBar::isModified() const
 void PresetBar::popupMenu()
 {
     juce::PopupMenu menu;
+    menu.setLookAndFeel(&getLookAndFeel());
     menu.addSectionHeader("FACTORY PRESETS");
     for(int i=0;i<presetCount;++i)menu.addItem(i+1,factories[i]);
     menu.addSeparator();menu.addSectionHeader("USER PRESETS");
@@ -177,7 +198,8 @@ void PresetBar::popupMenu()
         }
     if(files.isEmpty())menu.addItem(999,"No saved presets",false);
     juce::Component::SafePointer<PresetBar> safe(this);
-    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&current),
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&current)
+        .withParentComponent(getTopLevelComponent()),
         [safe,files](int choice)
         {
             if(safe==nullptr)return;
@@ -200,8 +222,8 @@ void PresetBar::popupMenu()
 }
 void PresetBar::storePreset()
 {
-    auto* dialog=new juce::AlertWindow("Save SkellFan preset","Preset name",
-                                       juce::MessageBoxIconType::NoIcon);
+    auto* dialog=new FanPresetDialog("Save SkellFan preset","Preset name",
+        skellcore::ui::skinFromIndex(static_cast<int>(p.apvts.state.getProperty("uiSkullSkin",1))));
     dialog->addTextEditor("name",name(),"Name");
     dialog->addButton("Save",1);dialog->addButton("Cancel",0);
     juce::Component::SafePointer<PresetBar> safe(this);
@@ -234,12 +256,16 @@ void PresetBar::erasePreset()
     const auto file=folder().getChildFile(juce::File::createLegalFileName(nameNow)+".xml");
     if(factory||!file.existsAsFile())return;
     juce::Component::SafePointer<PresetBar> safe(this);
-    juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::WarningIcon,
-        "Delete preset?","Delete '"+nameNow+"' from your saved presets?","Delete","Cancel",
-        this,juce::ModalCallbackFunction::create([safe,file](int result)
-        {
-            if(result==1&&safe!=nullptr){file.deleteFile();safe->chooseFactory(0);}
-        }));
+    auto* dialog=new FanPresetDialog("Delete preset?",
+        "Delete '"+nameNow+"' from your saved presets?",
+        skellcore::ui::skinFromIndex(static_cast<int>(p.apvts.state.getProperty("uiSkullSkin",1))));
+    dialog->addButton("Delete",1);
+    dialog->addButton("Cancel",0);
+    dialog->enterModalState(true,juce::ModalCallbackFunction::create([safe,file,dialog](int result)
+    {
+        if(result==1&&safe!=nullptr){file.deleteFile();safe->chooseFactory(0);}
+        delete dialog;
+    }),false);
 }
 void PresetBar::randomize()
 {

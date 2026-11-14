@@ -112,12 +112,15 @@ TopBar::TopBar(SkellFanAudioProcessor& p)
     skin=skellcore::ui::skinFromIndex(
         static_cast<int>(p.apvts.state.getProperty("uiSkullSkin",1)));
     skull.setSkin(skin);
+    skull.setTooltip("Change theme: "+juce::String(skellcore::ui::skinName(skin)));
     skull.onClick=[this]
     {
         skin=skellcore::ui::nextSkin(skin);
         processor.apvts.state.setProperty("uiSkullSkin",
                                           static_cast<int>(skin),nullptr);
         skull.setSkin(skin);
+        skull.setTooltip("Change theme: "+juce::String(skellcore::ui::skinName(skin)));
+        if(onThemeChanged)onThemeChanged();
         repaint();
     };
     addAndMakeVisible(skull);
@@ -130,12 +133,14 @@ void TopBar::refreshSkin()
     if (updated==skin) return;
     skin=updated;
     skull.setSkin(skin);
+    skull.setTooltip("Change theme: "+juce::String(skellcore::ui::skinName(skin)));
+    if(onThemeChanged)onThemeChanged();
     repaint();
 }
 void TopBar::paint(juce::Graphics& g)
 {
     const auto palette=skellcore::ui::skullPalette(skin);
-    g.fillAll(juce::Colour(0xff080a08));
+    g.fillAll(palette.background);
     g.addTransform(juce::AffineTransform::scale(getWidth()/956.0f,getHeight()/60.0f));
     g.setColour(palette.line);g.fillRect(0,59,956,1);
 

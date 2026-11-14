@@ -262,6 +262,19 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('satHousing',editor)
         self.assertIn('setProperty("uiWidth",574,nullptr)',proc)
 
+    def test_live_theme_and_custom_preset_menus(self):
+        editor=(ROOT/'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        preset=(ROOT/'Source/ui/PresetBar.cpp').read_text(encoding='utf-8')
+        fan=(ROOT/'Source/ui/FanView.cpp').read_text(encoding='utf-8')
+        look=(ROOT/'Source/ui/LookAndFeel.cpp').read_text(encoding='utf-8')
+        self.assertIn('top.onThemeChanged=[this]{applyTheme();}',editor)
+        self.assertIn('fan.setSkin(skin)',editor)
+        self.assertIn('fanArtworkForSkin(rawBody,skin)',fan)
+        self.assertIn('class FanPresetDialog final',preset)
+        self.assertIn('menu.setLookAndFeel(&getLookAndFeel())',preset)
+        self.assertIn('remove.setEnabled(saved.existsAsFile())',preset)
+        self.assertIn('juce::AlertWindow::backgroundColourId',look)
+
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')
         self.assertIn('initProcessing', sat)

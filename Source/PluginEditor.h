@@ -51,6 +51,7 @@ private:
     };
     void timerCallback() override;
     void setChoice(juce::ComboBox& choice,int i);
+    void applyTheme();
     SkellFanAudioProcessor& processor;
     SkellFanLookAndFeel theme;
     FanView fan;

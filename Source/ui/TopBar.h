@@ -37,6 +37,7 @@ public:
     void refreshSkin();
     skellcore::ui::SkullSkin currentSkin() const noexcept { return skin; }
     std::function<void()> onScope;
+    std::function<void()> onThemeChanged;
 private:
     SkellFanAudioProcessor& processor;
     skellcore::ui::SkullSkin skin=skellcore::ui::SkullSkin::Neon;
