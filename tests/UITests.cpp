@@ -79,6 +79,32 @@ void testProcessing(SkellFanAudioProcessor& processor)
                                   static_cast<int>(savedState.getSize()));
     const float restored=processor.apvts.getRawParameterValue("depth")->load();
     check(std::abs(restored-32.0f)<0.2f,"APVTS state save/load roundtrip");
+
+    // Audio-thread regression: pause must stop the actual LFO, not only its
+    // fan animation. Keep the user's Rate and host-automation parameter intact.
+    setParameter(processor,"syncMode",0.0f);
+    setParameter(processor,"rate",8.0f);
+    processor.setMotionPaused(false);
+    buffer.clear();
+    for (int i=0;i<42;++i) processor.processBlock(buffer,midi);
+    check(processor.displayRate.load(std::memory_order_relaxed)>7.9f,
+          "Manual LFO reaches selected Rate");
+    processor.setMotionPaused(true);
+    for (int i=0;i<42;++i) processor.processBlock(buffer,midi);
+    check(processor.displayRate.load(std::memory_order_relaxed)<0.02f,
+          "Pause stops real audio modulation frequency");
+    check(std::abs(processor.apvts.getRawParameterValue("rate")->load()-8.0f)<0.05f,
+          "Pause does not overwrite automated Rate");
+    juce::MemoryBlock pausedState;
+    processor.getStateInformation(pausedState);
+    processor.setMotionPaused(false);
+    processor.setStateInformation(pausedState.getData(),
+                                 static_cast<int>(pausedState.getSize()));
+    check(processor.isMotionPaused(),"Paused state survives project recall");
+    processor.setMotionPaused(false);
+    for (int i=0;i<42;++i) processor.processBlock(buffer,midi);
+    check(processor.displayRate.load(std::memory_order_relaxed)>7.9f,
+          "Resume restores original Rate");
 }
 
 void testInvalidInputAndSilentTail()

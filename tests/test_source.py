@@ -190,7 +190,7 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('brand.append("SKELL"',editor)
         self.assertIn('brand.append("FAN"',editor)
         self.assertIn('const juce::Rectangle<float> badge',editor)
-        self.assertIn('greenFanArtwork',fan)
+        self.assertIn('fanArtworkForSkin(rawBody,skin)',fan)
         self.assertIn('greenFanArtwork',theme)
         self.assertIn('smoothDivisionChange',lfo)
         self.assertIn('testHostDivisionChangeGlide()',dsp)
