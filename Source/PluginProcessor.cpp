@@ -141,6 +141,7 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
                 std::sqrt(juce::jmax(0.0f,balance)*0.5f));
         }
     const bool hostSync=p("syncMode")>=0.5f;
+    const bool paused=motionPaused.load(std::memory_order_relaxed);
     const int syncDiv=juce::jlimit(0,6,static_cast<int>(p("syncDiv")));
     const int noteType=juce::jlimit(0,2,static_cast<int>(p("noteType")));
     const int wave=juce::jlimit(0,3,static_cast<int>(p("wave")));
@@ -170,7 +171,7 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
                             :static_cast<double>(p("rate"));
     // Only hard-lock PPQ on entry/playback or a real seek/loop jump.
     // Re-locking on every audio block while rate-smoothing caused phase clicks.
-    if(hostSync && transportPlaying && validPPQ)
+    if(hostSync && !paused && transportPlaying && validPPQ)
     {
         const double expected=lastPPQ
                + static_cast<double>(lastBlockSamples)*lastHostBpm/(sr*60.0);
@@ -188,11 +189,10 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
     lastBlockSamples=n;
     lastHostBpm=bpm;
     wasTransportPlaying=transportPlaying;
-    wasHostSynced=hostSync && !motionPaused.load(std::memory_order_relaxed);
+    wasHostSynced=hostSync && !paused;
     lastSyncDivision=syncDiv;
     lastNoteType=noteType;
     // Stop modulation without changing the automated Rate or sync parameters.
-    const bool paused=motionPaused.load(std::memory_order_relaxed);
     lfo.setFrequency(paused?0.0:hz,hostSync && !paused);
     // Keep all delay histories warm, but skip the expensive interpolation for
     // modes absent from the current/fading mix.

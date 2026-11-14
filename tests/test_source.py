@@ -257,6 +257,7 @@ class SourceSanity(unittest.TestCase):
         proc=(ROOT/'Source/PluginProcessor.cpp').read_text(encoding='utf-8')
         editor=(ROOT/'Source/PluginEditor.cpp').read_text(encoding='utf-8')
         self.assertIn('lfo.setFrequency(paused?0.0:hz',proc)
+        self.assertIn('if(hostSync && !paused && transportPlaying && validPPQ)',proc)
         self.assertIn('processor.setMotionPaused(paused)',editor)
         self.assertIn('PAUSED | RATE SAVED',editor)
         self.assertIn('satHousing',editor)
