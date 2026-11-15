@@ -10,13 +10,7 @@ FanView::FanView(SkellFanAudioProcessor& p):processor(p)
     grille=Theme::image(BinaryData::grille_png,BinaryData::grille_pngSize);
     setSkin(skellcore::ui::skinFromIndex(
         static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))));
-    // Single moulded casing shoulder masks the SAT pod embedded in the photo.
-    pedestalRepairPath.startNewSubPath(603.0f,755.0f);
-    pedestalRepairPath.cubicTo(608.0f,704.0f,619.0f,638.0f,650.0f,619.0f);
-    pedestalRepairPath.cubicTo(698.0f,595.0f,735.0f,656.0f,744.0f,711.0f);
-    pedestalRepairPath.lineTo(756.0f,761.0f);
-    pedestalRepairPath.lineTo(603.0f,761.0f);
-    pedestalRepairPath.closeSubPath();
+    // Source-photo repairs are cached once per skin, never in paint().
     lastTime=juce::Time::getMillisecondCounterHiRes();
     startTimerHz(60);
 }
@@ -112,6 +106,34 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
             for(int x=rightStart;x<rightLimit;++x)
                 pixels.setPixelColour(x,y,juce::Colours::transparentBlack);
         }
+
+        // Blend the original SAT tower out of the photographed casing by
+        // borrowing texture from the equivalent LEFT shoulder. The fan body
+        // is approximately symmetric, unlike the detached SAT module.
+        // Feather all four sides, preserve authentic lighting/noise, and
+        // never fill the region with a flat white geometric blob.
+        // Executed once per theme change on the message thread.
+        const int x0=juce::jlimit(0,body.getWidth(),juce::roundToInt(619.0f*sx));
+        const int x1=juce::jlimit(0,body.getWidth(),juce::roundToInt(763.0f*sx));
+        const int y0=juce::jlimit(0,body.getHeight(),juce::roundToInt(599.0f*sy));
+        const int y1=juce::jlimit(0,body.getHeight(),juce::roundToInt(751.0f*sy));
+        for(int y=y0;y<y1;++y)
+            for(int x=x0;x<x1;++x)
+            {
+                const int mirrorX=body.getWidth()-1-x;
+                if(mirrorX<0 || mirrorX>=body.getWidth()) continue;
+                const auto original=pixels.getPixelColour(x,y);
+                const auto donor=pixels.getPixelColour(mirrorX,y);
+                const float fx=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(x-x0)/(12.0f*sx)),
+                    juce::jlimit(0.0f,1.0f,(x1-x-1)/(13.0f*sx)));
+                const float fy=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(y-y0)/(12.0f*sy)),
+                    juce::jlimit(0.0f,1.0f,(y1-y-1)/(17.0f*sy)));
+                const float weight=fx*fy;
+                if(weight>0.0f)
+                    pixels.setPixelColour(x,y,original.interpolatedWith(donor,weight));
+            }
     }
     rotor=Theme::fanArtworkForSkin(rawRotor,skin);
     blur=Theme::fanArtworkForSkin(rawBlur,skin);
@@ -161,15 +183,7 @@ void FanView::paint(juce::Graphics& g)
     if(body.isValid())
         g.drawImage(body,juce::Rectangle<float>{0.0f,0.0f,Theme::W,Theme::H},
                     juce::RectanglePlacement::stretchToFit);
-    // Clean cavity covers the black/grey photographic patches and removes
-    // decorative background skeletons. Casing remains behind the actual rotor.
-    juce::ColourGradient casing(juce::Colour(0xffe5e7e9),625.0f,630.0f,
-                                juce::Colour(0xffa7adb3),735.0f,750.0f,false);
-    casing.addColour(0.5,juce::Colour(0xffcdd1d4));
-    g.setGradientFill(casing);
-    g.fillPath(pedestalRepairPath);
-    g.setColour(juce::Colour(0xfff7f8fa).withAlpha(0.28f));
-    g.strokePath(pedestalRepairPath,juce::PathStrokeType(1.0f));
+    // A clean cavity replaces the photographed black/grey patches.
     const auto bladeWindow=Theme::rotorRect.reduced(1.0f);
     juce::ColourGradient cavity(juce::Colour(0xff101b15),469.0f,100.0f,
                                 juce::Colour(0xff040807),469.0f,690.0f,false);

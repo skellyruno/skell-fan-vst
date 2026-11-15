@@ -15,7 +15,6 @@ private:
     SkellFanAudioProcessor& processor;
     juce::Image rawBody,rawRotor,rawBlur,body,rotor,blur,grille;
     int skinIndex=-1;
-    juce::Path pedestalRepairPath;
     bool enabled=true, lastPowerOn=true;
     double lastTime=0.0,angle=0.0,speed=0.0;
 };

@@ -239,7 +239,7 @@ class SourceSanity(unittest.TestCase):
         self.assertNotIn('Permanent top-bar Width/Mix percentage', knob)
         self.assertIn('skellcore::ui::drawSkullKeyMark',fan)
         self.assertIn('g.reduceClipRegion(rotorAperture)',fan)
-        self.assertIn('pedestalRepairPath',fan)
+        self.assertIn('borrowing texture from the equivalent LEFT shoulder',fan)
         self.assertNotIn('skeletonPath',fan)
         self.assertNotIn('ghost(270.0f',fan)
         self.assertIn('The source photograph includes an unrelated saturated arc', fan)
@@ -248,7 +248,7 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('juce::Colour::fromHSV(', fan)
         self.assertIn('if (body.isValid())', fan)
         self.assertNotIn('if(hub.isValid())', fan)
-        self.assertIn('juce::Path pedestalRepairPath', fan_h)
+        self.assertNotIn('pedestalRepairPath', fan_h)
         self.assertIn('const double target=(enabled&&powerOn)', fan)
 
     def test_pause_motion_and_compact_default(self):
