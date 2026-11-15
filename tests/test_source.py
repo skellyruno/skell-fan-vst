@@ -98,7 +98,7 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('sanitizeAudioSample', helper)
         self.assertIn('sanitizeAudioSample(wetInput[j])', processor)
         self.assertIn('lastPlateSync != s', editor)
-        self.assertIn('if (hostSync)', editor)
+        self.assertIn('const bool synced=read("syncMode")>0.5f;', editor)
         self.assertIn('inputSafetyTests()', tests)
 
     def test_ui_resize_spacing_and_control_readouts(self):
@@ -121,7 +121,7 @@ class SourceSanity(unittest.TestCase):
                 self.assertGreaterEqual(w * scale_x, 24.0)
                 self.assertLessEqual((xpos + w) * scale_x, win_w)
             for bx, by, bw, bh in ((25,743,116,183),(778,743,155,183),
-                                    (476,907,239,24),(648,661,57,70)):
+                                    (472,903,230,23),(542,797,77,99)):
                 self.assertGreaterEqual(bx*scale_x, 0)
                 self.assertGreaterEqual(by*scale_y, 0)
                 self.assertLessEqual((bx+bw)*scale_x, win_w)
@@ -215,7 +215,7 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('g.drawText("-24",4,83,26,12',status)
         self.assertIn('g.drawText("-54",4,139,26,12',status)
         self.assertIn('"SAT " + juce::String(saturation)',status)
-        self.assertIn('Fine, fixed concentric lathe details',fan)
+        self.assertIn('Shared SkellCore skull face',fan)
         self.assertIn('const float output=breeze::dsp::sanitizeAudioSample(',processor)
         self.assertIn('testInvalidInputAndSilentTail()',integration)
         self.assertIn('FanMotionButton',integration)
