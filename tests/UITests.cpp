@@ -282,6 +282,19 @@ void testEditor(SkellFanAudioProcessor& processor)
                  =="Chorus - Classic",
           "Screenshots restore the actual factory Chorus startup state");
 
+    juce::Slider* integratedSat=nullptr;
+    for(int i=0;i<editor->getNumChildComponents();++i)
+        if(auto* child=dynamic_cast<juce::Slider*>(editor->getChildComponent(i)))
+            if(child->getName()=="SkellFan SAT")
+                integratedSat=child;
+    check(integratedSat!=nullptr,"SAT knob remains interactive");
+    if(integratedSat)
+    {
+        const auto b=integratedSat->getBounds();
+        check(b.getY()>editor->getHeight()*0.75f &&
+              b.getX()>editor->getWidth()*0.50f,
+              "SAT is part of the main hardware deck, not an external tower");
+    }
     const std::array<std::array<int,2>,4> sizes {{{574,590},{765,787},{956,984},{1434,1476}}};
     juce::PNGImageFormat png;
     for(const auto& sz:sizes)
@@ -310,8 +323,8 @@ void testEditor(SkellFanAudioProcessor& processor)
             check(leftSide.getGreen()<=leftSide.getRed()+35
                   && rightSide.getGreen()<=rightSide.getRed()+35,
                   "Stray green inserts do not protrude beside the console");
-            check(snapshot.getPixelAt(644,655).getBrightness()>0.30f,
-                  "SAT socket is silver rather than a floating black block");
+            check(snapshot.getPixelAt(674,649).getAlpha()!=0,
+                  "Fan cavity is rendered behind the former SAT tower");
             check(snapshot.getPixelAt(195,725).getBrightness()<0.17f
                   && snapshot.getPixelAt(751,725).getBrightness()<0.17f,
                   "No jagged photo fringe outside fan base at either shoulder");

@@ -60,16 +60,11 @@ void SkellFanAudioProcessorEditor::Stage::paint(juce::Graphics& g)
 {
     g.addTransform(juce::AffineTransform::scale(getWidth()/Theme::W,getHeight()/Theme::H));
     g.fillAll(Theme::black);
-    juce::ColourGradient floor(juce::Colour(0xff15171a),0,700,
-                               juce::Colour(0xff040405),0,984,false);
-    floor.addColour(0.35,juce::Colour(0xff090b0e));
-    g.setGradientFill(floor);g.fillRect(0,585,956,399);
-    // Cached ambient light under the fan; no additional bitmap or frame cost.
-    juce::ColourGradient halo(juce::Colour(0xff225a35).withAlpha(0.19f),466,376,
-                              juce::Colours::transparentBlack,810,720,true);
-    g.setGradientFill(halo);
-    g.fillEllipse(115.0f,67.0f,701.0f,676.0f);
-    g.setColour(juce::Colour(0xff131519));g.fillRect(0,585,956,2);
+    juce::ColourGradient floor(juce::Colour(0xff07090a),0,500,
+                               juce::Colour(0xff101216),0,984,false);
+    floor.addColour(0.65,juce::Colour(0xff121417));
+    g.setGradientFill(floor);
+    g.fillRect(0,500,956,484);
 }
 void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
 {
@@ -92,30 +87,11 @@ void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     g.setColour(juce::Colour(0xff071309).withAlpha(0.64f));
     g.drawRoundedRectangle(r.expanded(5.0f,4.0f),16.0f,1.7f);
     Theme::metal(g,r);
-    // The original photo has a baked-in SAT dial, arc and text. Cover the
-    // complete old control with a satin-aluminium socket that belongs to
-    // the white housing; the interactive knob is painted above this plate.
-    const juce::Rectangle<float> satHousing{637.0f,609.0f,81.0f,122.0f};
-    g.setColour(juce::Colours::black.withAlpha(0.24f));
-    g.fillRoundedRectangle(satHousing.translated(1.7f,2.8f),20.0f);
-    juce::ColourGradient satMetal(juce::Colour(0xffe2e4e6),satHousing.getTopLeft(),
-                                  juce::Colour(0xff9da2a8),satHousing.getBottomRight(),false);
-    satMetal.addColour(0.48,juce::Colour(0xffc1c7cb));
-    g.setGradientFill(satMetal);
-    g.fillRoundedRectangle(satHousing,20.0f);
-    g.setColour(juce::Colour(0xff717b7e));
-    g.drawRoundedRectangle(satHousing.reduced(1.0f),19.0f,1.6f);
-    g.setColour(juce::Colour(0xfff6fcf7).withAlpha(0.62f));
-    g.drawRoundedRectangle(satHousing.reduced(3.0f),17.0f,1.0f);
-    g.setColour(juce::Colour(0xff30383a));
-    g.setFont(Theme::font(14.0f,true));
-    g.drawText("SAT",juce::Rectangle<float>{639.0f,700.0f,77.0f,19.0f},
-               juce::Justification::centred);
     // Small machined cross screws are drawn on the outer bezel; they never
     // obstruct knobs, DEPTH, preset keys, or the engraved bottom nameplate.
     constexpr std::array<std::array<float,2>,4> screws {{
-        {225.0f,744.0f},{727.0f,744.0f},
-        {225.0f,899.0f},{727.0f,899.0f}
+        {223.0f,741.0f},{731.0f,741.0f},
+        {223.0f,916.0f},{731.0f,916.0f}
     }};
     for (const auto& screw : screws)
     {
@@ -132,36 +108,16 @@ void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     }
     // Fine horizontal brush strokes.
     g.setColour(juce::Colours::white.withAlpha(0.06f));
-    for(int y=745;y<902;y+=3)g.drawLine(235.0f,static_cast<float>(y),718.0f,static_cast<float>(y),.5f);
+    for(int y=742;y<919;y+=3)g.drawLine(224.0f,static_cast<float>(y),731.0f,static_cast<float>(y),.5f);
     // Compact labels remain separated at the 574 px minimum editor width.
     // The mode information panel retains the full effect names.
     label(g,"VIB",{246,885,51,20},11.0f);
     label(g,"ROT",{301,885,50,20},11.0f);
     label(g,"TRM",{354,885,51,20},11.0f);
     label(g,"CHO",{408,885,49,20},11.0f);
-    // Read the actual sync mode: never display Hz ticks for host divisions.
-    const bool hostSync = processor.apvts.getRawParameterValue("syncMode")
-                              ->load(std::memory_order_relaxed) > 0.5f;
-    if (hostSync)
-    {
-        label(g,"1/2",{462,807,30,22},10);
-        label(g,"1/32",{542,807,38,22},10);
-        label(g,"1/1",{463,859,30,22},10);
-        label(g,"1/64",{542,859,38,22},10);
-    }
-    else
-    {
-        label(g,"8",{464,807,28,22},12);
-        label(g,"24",{547,807,27,22},12);
-        label(g,"0",{465,859,27,22},12);
-        label(g,"32",{549,859,28,22},12);
-    }
-    // Platform-independent wave labels: decorative Unicode glyphs showed up
-    // as replacement characters on the Windows CI system font.
-    label(g,"SIN",{577,807,31,26},10.0f);
-    label(g,"TRI",{577,855,31,26},10.0f);
-    label(g,"SQR",{687,807,31,26},10.0f);
-    label(g,"SAW",{687,853,31,26},10.0f);
+    // One aligned RATE / SAT / WAVE hardware row: captions live below knobs.
+    label(g,"SYNC",{475,733,79,18},11.0f);
+    label(g,"RHYTHM",{560,733,127,18},11.0f);
     // Proper recessed nameplate covers the uneven moulded plastic and
     // replaces the old text-over-image treatment. One unbroken wordmark.
     const juce::Rectangle<float> badge{354.0f,937.0f,248.0f,39.0f};
@@ -208,7 +164,7 @@ void SkellFanAudioProcessorEditor::RateReadout::paint(juce::Graphics& g)
 SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcessor& p)
     :AudioProcessorEditor(&p),plate(p),processor(p),fan(p),top(p),presets(p),depth(p),
      rate(p,"rate","RATE"),syncRate(p,"syncDiv","RATE"),wave(p,"wave","WAVE"),
-     saturation(p,"saturation","",true,true),scope(p),rateReadout(p),
+     saturation(p,"saturation","SAT",false,true),scope(p),rateReadout(p),
      outputMeter(p),modeInfo(p)
 {
     setLookAndFeel(&theme);
@@ -233,6 +189,8 @@ SkellFanAudioProcessorEditor::SkellFanAudioProcessorEditor(SkellFanAudioProcesso
         rateReadout.repaint();
     };
     addAndMakeVisible(fanSwitch);
+    saturation.setName("SkellFan SAT");
+    saturation.setTooltip("Saturation amount; double-click to reset");
     addAndMakeVisible(rateReadout);
     addAndMakeVisible(outputMeter);
     addAndMakeVisible(modeInfo);
@@ -329,13 +287,13 @@ void SkellFanAudioProcessorEditor::resized()
     place(depth,254,739,203,64);
     const float modeX[]={246,301,354,408};const float modeW[]={51,50,51,49};
     for(int i=0;i<4;++i)place(*modeKeys[i],modeX[i],807,modeW[i],75);
-    place(*syncKeys[0],485,752,36,30);place(*syncKeys[1],522,752,36,30);
+    place(*syncKeys[0],482,756,35,30);place(*syncKeys[1],520,756,35,30);
     const float noteX[]={565,603,641};
-    for(int i=0;i<3;++i)place(*noteKeys[i],noteX[i],752,36,30);
-    place(rate,476,791,85,104);place(syncRate,476,791,85,104);
-    place(wave,601,791,85,104);place(saturation,648,622,57,70);
+    for(int i=0;i<3;++i)place(*noteKeys[i],noteX[i],756,36,30);
+    place(rate,462,797,77,99);place(syncRate,462,797,77,99);
+    place(saturation,542,797,77,99);place(wave,622,797,77,99);
     place(scope,18,729,200,136);
-    place(rateReadout,476,907,239,24);
+    place(rateReadout,472,903,230,23);
     place(outputMeter,25,743,116,183);
     place(modeInfo,778,743,155,183);
     // Non-visible ComboBoxes stay out of the mouse hit region.

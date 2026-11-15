@@ -10,50 +10,13 @@ FanView::FanView(SkellFanAudioProcessor& p):processor(p)
     grille=Theme::image(BinaryData::grille_png,BinaryData::grille_pngSize);
     setSkin(skellcore::ui::skinFromIndex(
         static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))));
-    // Build one compact skeletal path: no SVG decoding or path allocation at 60 Hz.
-    // Skull, jaw, collar bones, rib cage, pelvis and limb segments share one vector.
-    skeletonPath.addEllipse(-8.0f,-33.0f,16.0f,17.0f);
-    skeletonPath.addEllipse(-5.0f,-26.2f,3.2f,3.0f);
-    skeletonPath.addEllipse( 1.8f,-26.2f,3.2f,3.0f);
-    skeletonPath.startNewSubPath(-4.2f,-16.0f);
-    skeletonPath.lineTo(-3.0f,-12.0f);
-    skeletonPath.lineTo( 3.0f,-12.0f);
-    skeletonPath.lineTo( 4.2f,-16.0f);
-    skeletonPath.startNewSubPath(0.0f,-12.0f);
-    skeletonPath.lineTo(0.0f,20.0f); // spine
-    skeletonPath.startNewSubPath(-16.0f,-8.0f);
-    skeletonPath.lineTo(16.0f,-8.0f); // shoulders
-    for (int rib=0;rib<3;++rib)
-    {
-        const float y=-4.0f+rib*6.5f;
-        skeletonPath.startNewSubPath(-14.0f+rib*1.8f,y);
-        skeletonPath.quadraticTo(0.0f,y+7.0f,14.0f-rib*1.8f,y);
-    }
-    skeletonPath.startNewSubPath(-10.0f,18.0f);
-    skeletonPath.lineTo(0.0f,24.0f);
-    skeletonPath.lineTo(10.0f,18.0f);
-    skeletonPath.startNewSubPath(-16.0f,-8.0f);
-    skeletonPath.lineTo(-23.0f,6.0f);
-    skeletonPath.lineTo(-19.0f,22.0f);
-    skeletonPath.startNewSubPath(16.0f,-8.0f);
-    skeletonPath.lineTo(23.0f,6.0f);
-    skeletonPath.lineTo(19.0f,22.0f);
-    skeletonPath.startNewSubPath(-8.0f,21.0f);
-    skeletonPath.lineTo(-11.0f,37.0f);
-    skeletonPath.lineTo(-9.0f,49.0f);
-    skeletonPath.startNewSubPath(8.0f,21.0f);
-    skeletonPath.lineTo(11.0f,37.0f);
-    skeletonPath.lineTo(9.0f,49.0f);
-    foregroundMask.startNewSubPath(274.0f,610.0f);
-    foregroundMask.lineTo(683.0f,610.0f);
-    foregroundMask.quadraticTo(727.0f,629.0f,745.0f,687.0f);
-    foregroundMask.lineTo(788.0f,901.0f);
-    foregroundMask.lineTo(797.0f,984.0f);
-    foregroundMask.lineTo(160.0f,984.0f);
-    foregroundMask.lineTo(166.0f,899.0f);
-    foregroundMask.lineTo(211.0f,687.0f);
-    foregroundMask.quadraticTo(232.0f,629.0f,274.0f,610.0f);
-    foregroundMask.closeSubPath();
+    // Single moulded casing shoulder masks the SAT pod embedded in the photo.
+    pedestalRepairPath.startNewSubPath(603.0f,755.0f);
+    pedestalRepairPath.cubicTo(608.0f,704.0f,619.0f,638.0f,650.0f,619.0f);
+    pedestalRepairPath.cubicTo(698.0f,595.0f,735.0f,656.0f,744.0f,711.0f);
+    pedestalRepairPath.lineTo(756.0f,761.0f);
+    pedestalRepairPath.lineTo(603.0f,761.0f);
+    pedestalRepairPath.closeSubPath();
     lastTime=juce::Time::getMillisecondCounterHiRes();
     startTimerHz(60);
 }
@@ -198,25 +161,28 @@ void FanView::paint(juce::Graphics& g)
     if(body.isValid())
         g.drawImage(body,juce::Rectangle<float>{0.0f,0.0f,Theme::W,Theme::H},
                     juce::RectanglePlacement::stretchToFit);
-    // The casing is behind the fan, while shadowy figures live further
-    // behind the blades. Their sway and orbit derive from the same angle;
-    // stopping animation or bypassing the effect freezes every figure.
+    // Clean cavity covers the black/grey photographic patches and removes
+    // decorative background skeletons. Casing remains behind the actual rotor.
+    juce::ColourGradient casing(juce::Colour(0xffe5e7e9),625.0f,630.0f,
+                                juce::Colour(0xffa7adb3),735.0f,750.0f,false);
+    casing.addColour(0.5,juce::Colour(0xffcdd1d4));
+    g.setGradientFill(casing);
+    g.fillPath(pedestalRepairPath);
+    g.setColour(juce::Colour(0xfff7f8fa).withAlpha(0.28f));
+    g.strokePath(pedestalRepairPath,juce::PathStrokeType(1.0f));
+    const auto bladeWindow=Theme::rotorRect.reduced(1.0f);
+    juce::ColourGradient cavity(juce::Colour(0xff101b15),469.0f,100.0f,
+                                juce::Colour(0xff040807),469.0f,690.0f,false);
+    cavity.addColour(0.5,juce::Colour(0xff070e0b));
+    g.setGradientFill(cavity);
+    g.fillEllipse(bladeWindow);
+    // A round rotor aperture, not the old straight pedestal mask, ensures
+    // three complete blades remain visible at every animation angle.
+    juce::Path rotorAperture;
+    rotorAperture.addEllipse(bladeWindow);
     {
-        const auto ghost=[&](float x,float y,float scale,float phase,float opacity)
-        {
-            juce::Graphics::ScopedSaveState saved(g);
-            const float sway=static_cast<float>(std::sin(angle*0.7+phase))*5.0f;
-            g.addTransform(juce::AffineTransform::scale(scale)
-                .rotated(static_cast<float>(std::sin(angle*0.5+phase))*0.14f)
-                .translated(x+sway,y));
-            g.setColour(juce::Colour(0xff80e899).withAlpha(opacity));
-            g.strokePath(skeletonPath,juce::PathStrokeType(2.3f));
-        };
-        ghost(270.0f,355.0f,1.45f,0.0f,0.14f);
-        ghost(660.0f,342.0f,1.36f,2.1f,0.13f);
-        ghost(469.0f,547.0f,1.25f,4.2f,0.11f);
-    }
-
+        juce::Graphics::ScopedSaveState rotorClip(g);
+        g.reduceClipRegion(rotorAperture);
     auto rotorRect=Theme::rotorRect;
     const auto drawBlade=[&](const juce::Image& im,float opacity,double a)
     {
@@ -236,18 +202,8 @@ void FanView::paint(juce::Graphics& g)
             drawBlade(rotor,0.13f+(4-k)*0.035f,angle-k*speed*0.038);
         if(speed>2.5)drawBlade(blur,static_cast<float>(juce::jlimit(0.0,0.7,(speed-2.5)*1.4)),angle);
     }
-    g.setOpacity(1.0f);
-
-    // Front pedestal occludes the physically impossible lower blade spill.
-    // Repaint only the foreground casing from the existing source artwork
-    // before the front grille: no extra PNG and no detached neon patch.
-    if (body.isValid())
-    {
-        juce::Graphics::ScopedSaveState saved(g);
-        g.reduceClipRegion(foregroundMask);
-        g.drawImage(body,juce::Rectangle<float>{0.0f,0.0f,Theme::W,Theme::H},
-                    juce::RectanglePlacement::stretchToFit);
     }
+    g.setOpacity(1.0f);
 
     // Premium mechanical bearing: replace the flat concentric green PNG
     // with steel bevels, recessed black inner barrel and an engraved skeleton.
@@ -270,21 +226,20 @@ void FanView::paint(juce::Graphics& g)
                                juce::Colour(0xff060d08),center.x+61.0f,center.y+68.0f,false);
     g.setGradientFill(inset);
     g.fillEllipse(center.x-69.0f,center.y-69.0f,138.0f,138.0f);
-    // Fine, fixed concentric lathe details: they remain stationary
-    // while the skeletal mascot and blade assembly rotate together.
-    g.setColour(juce::Colour(0xffeffff1).withAlpha(0.38f));
-    g.drawEllipse(center.x-88.0f,center.y-88.0f,176.0f,176.0f,1.2f);
-    g.setColour(juce::Colour(0xff07140b).withAlpha(0.6f));
-    g.drawEllipse(center.x-74.0f,center.y-74.0f,148.0f,148.0f,1.5f);
+    // Shared SkellCore skull face, no full-body skeleton in the bearing.
+    g.setColour(juce::Colour(0xffe4f5e7).withAlpha(0.25f));
+    g.drawEllipse(center.x-58.0f,center.y-58.0f,116.0f,116.0f,1.0f);
     {
-        juce::Graphics::ScopedSaveState saved(g);
-        g.addTransform(juce::AffineTransform::scale(1.35f)
-                        .rotated(static_cast<float>(angle))
-                        .translated(center.x,center.y-9.0f));
-        g.setColour(juce::Colour(0xff07160c));
-        g.strokePath(skeletonPath,juce::PathStrokeType(5.5f));
-        g.setColour(juce::Colour(0xffd7f1dc));
-        g.strokePath(skeletonPath,juce::PathStrokeType(3.3f));
+        juce::Path skullClip;
+        skullClip.addEllipse(center.x-57.0f,center.y-57.0f,114.0f,114.0f);
+        juce::Graphics::ScopedSaveState skullSafe(g);
+        g.reduceClipRegion(skullClip);
+        constexpr float skullScale=4.0f;
+        g.addTransform(juce::AffineTransform::scale(skullScale).translated(
+             center.x-13.5f*skullScale,center.y-13.5f*skullScale));
+        const auto skin=skellcore::ui::skinFromIndex(skinIndex);
+        const auto palette=skellcore::ui::skullPalette(skin);
+        skellcore::ui::drawSkullKeyMark(g,0.0f,0.0f,palette.bone,palette.panelHi);
     }
     const auto c=Theme::grilleRect;
     if(grille.isValid())

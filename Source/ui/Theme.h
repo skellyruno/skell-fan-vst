@@ -15,7 +15,7 @@ inline const juce::Colour black{0xff040405},bar{0xff0b0b0c},chrome{0xffacb4bc},
 inline const juce::Rectangle<float> rotorRect{166.0f,85.0f,600.0f,600.0f};
 inline const juce::Rectangle<float> grilleRect{146.0f,65.0f,640.0f,640.0f};
 inline const juce::Rectangle<float> hubRect{371.0f,290.0f,190.0f,190.0f};
-inline const juce::Rectangle<float> plateRect{231.0f,738.0f,490.0f,169.0f};
+inline const juce::Rectangle<float> plateRect{216.0f,733.0f,524.0f,193.0f};
 inline juce::Font font(float pt,bool bold=false)
 {
     return juce::Font(juce::FontOptions(pt).withStyle(bold?"Bold":"Regular"));

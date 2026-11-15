@@ -145,10 +145,10 @@ class SourceSanity(unittest.TestCase):
         for short in ('"VIB"', '"ROT"', '"TRM"', '"CHO"'):
             self.assertIn(short,editor)
         self.assertIn('const char* notes[]={"S","D","T"}',editor)
-        self.assertIn('place(saturation,648,622,57,70)',editor)
+        self.assertIn('place(saturation,542,797,77,99)',editor)
         self.assertIn('getWidth()/203.0f,getHeight()/64.0f',depth)
         self.assertIn('constexpr float width=203.0f, cy=45.0f',depth)
-        self.assertIn('saturation(p,"saturation","",true,true)',editor)
+        self.assertIn('saturation(p,"saturation","SAT",false,true)',editor)
         self.assertIn('"DRY/WET"',top)
 
     def test_skellcore_dependency_identity_and_compatibility(self):
@@ -237,20 +237,18 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('mouseWheelMove', header)
         self.assertIn('keyPressed', header)
         self.assertNotIn('Permanent top-bar Width/Mix percentage', knob)
-        self.assertIn('skeletonPath.addEllipse', fan)
-        self.assertIn('g.strokePath(skeletonPath', fan)
-        self.assertIn('ghost(270.0f', fan)
-        self.assertIn('ghost(660.0f', fan)
-        self.assertIn('ghost(469.0f', fan)
-        self.assertIn('.rotated(static_cast<float>(angle))', fan)
-        self.assertIn('g.reduceClipRegion(foregroundMask)', fan)
+        self.assertIn('skellcore::ui::drawSkullKeyMark',fan)
+        self.assertIn('g.reduceClipRegion(rotorAperture)',fan)
+        self.assertIn('pedestalRepairPath',fan)
+        self.assertNotIn('skeletonPath',fan)
+        self.assertNotIn('ghost(270.0f',fan)
         self.assertIn('The source photograph includes an unrelated saturated arc', fan)
         self.assertIn('c.getSaturation()>0.08f', fan)
         self.assertIn('0.0f,0.0f,metalValue', fan)
         self.assertIn('juce::Colour::fromHSV(', fan)
         self.assertIn('if (body.isValid())', fan)
         self.assertNotIn('if(hub.isValid())', fan)
-        self.assertIn('juce::Path skeletonPath,foregroundMask', fan_h)
+        self.assertIn('juce::Path pedestalRepairPath', fan_h)
         self.assertIn('const double target=(enabled&&powerOn)', fan)
 
     def test_pause_motion_and_compact_default(self):
@@ -260,11 +258,11 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('if(hostSync && !paused && transportPlaying && validPPQ)',proc)
         self.assertIn('processor.setMotionPaused(paused)',editor)
         self.assertIn('PAUSED | RATE SAVED',editor)
-        self.assertIn('satHousing',editor)
+        self.assertIn('SkellFan SAT',editor)
         fan=(ROOT/'Source/ui/FanView.cpp').read_text(encoding='utf-8')
         self.assertIn('correctSide(177,247,713,927)',fan)
         self.assertIn('correctSide(704,774,713,927)',fan)
-        self.assertNotIn('g.fillRoundedRectangle(satHousing,12.0f)',editor)
+        self.assertNotIn('satHousing',editor)
         self.assertIn('setProperty("uiWidth",574,nullptr)',proc)
 
     def test_live_theme_and_custom_preset_menus(self):
