@@ -119,6 +119,36 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
         };
         correctSide(177,247,713,927);
         correctSide(704,774,713,927);
+
+        // The same photographed inserts also contain jagged black/white
+        // alpha fringes OUTSIDE the clean white plastic shell. Hue changes
+        // cannot correct black pixels. Clip only these two small outer
+        // shoulder wedges against the actual casing silhouette instead.
+        // All coordinates are relative to the original 956x984 body PNG.
+        const int yStart=juce::jlimit(0,body.getHeight(),juce::roundToInt(710*sy));
+        const int yEnd=juce::jlimit(0,body.getHeight(),juce::roundToInt(853*sy));
+        for(int y=yStart;y<yEnd;++y)
+        {
+            const float fy=static_cast<float>(y)/sy;
+            const float leftEdge=fy<740.0f
+                 ? 205.0f-0.1f*(fy-710.0f)
+                 : 202.0f-0.385f*(fy-740.0f);
+            const float rightEdge=743.0f+0.22f*(fy-710.0f);
+            const int leftLimit=juce::jlimit(0,body.getWidth(),
+                                            juce::roundToInt(leftEdge*sx));
+            const int rightStart=juce::jlimit(0,body.getWidth(),
+                                            juce::roundToInt(rightEdge*sx));
+            // Only clear local exterior wedges; do not touch the floor,
+            // blades, hub, rotor or the physical control deck.
+            const int leftStart=juce::jlimit(0,leftLimit,
+                                            juce::roundToInt(160.0f*sx));
+            const int rightLimit=juce::jlimit(rightStart,body.getWidth(),
+                                            juce::roundToInt(795.0f*sx));
+            for(int x=leftStart;x<leftLimit;++x)
+                pixels.setPixelColour(x,y,juce::Colours::transparentBlack);
+            for(int x=rightStart;x<rightLimit;++x)
+                pixels.setPixelColour(x,y,juce::Colours::transparentBlack);
+        }
     }
     rotor=Theme::fanArtworkForSkin(rawRotor,skin);
     blur=Theme::fanArtworkForSkin(rawBlur,skin);

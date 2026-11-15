@@ -312,6 +312,11 @@ void testEditor(SkellFanAudioProcessor& processor)
                   "Stray green inserts do not protrude beside the console");
             check(snapshot.getPixelAt(644,655).getBrightness()>0.30f,
                   "SAT socket is silver rather than a floating black block");
+            check(snapshot.getPixelAt(195,725).getBrightness()<0.17f
+                  && snapshot.getPixelAt(751,725).getBrightness()<0.17f,
+                  "No jagged photo fringe outside fan base at either shoulder");
+            check(snapshot.getPixelAt(185,740).getBrightness()<0.17f,
+                  "Left base shoulder remains clean under magnification");
         }
         const auto file=juce::File::getCurrentWorkingDirectory().getChildFile(
             "SkellFan-ui-"+juce::String(sz[0])+"x"+juce::String(sz[1])+".png");
