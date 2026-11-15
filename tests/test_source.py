@@ -267,6 +267,9 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('leftEdge+12.0f',fan)
         self.assertIn('Theme::W-rightEdge+23.0f',fan)
         self.assertIn('rightEdge-26.0f',fan)
+        self.assertIn('(dist-12.0f)/12.0f',fan)
+        self.assertNotIn('palette.background.withAlpha(0.94f)',
+            (ROOT/'Source/ui/LookAndFeel.cpp').read_text(encoding='utf-8'))
         look=(ROOT/'Source/ui/LookAndFeel.cpp').read_text(encoding='utf-8')
         self.assertIn('drawCornerResizer',look)
         self.assertNotIn('const int feather=',fan)

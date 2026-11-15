@@ -35,7 +35,10 @@ void SkellFanLookAndFeel::drawCornerResizer(juce::Graphics& g,int w,int h,
     // Keep the resize target functional but integrate its artwork into Skell.
     const auto palette=skellcore::ui::skullPalette(skin);
     const float x=static_cast<float>(w),y=static_cast<float>(h);
-    g.setColour(palette.background.withAlpha(0.94f));
+    // The Ivory palette used to put a glaring cream square in the
+    // otherwise dark bottom-right corner. All skins share this muted base;
+    // only the tiny grip dots inherit the active accent.
+    g.setColour(juce::Colour(0xff0b150e).withAlpha(0.97f));
     g.fillRoundedRectangle(x-17.0f,y-17.0f,16.0f,16.0f,4.0f);
     g.setColour(palette.accent.withAlpha(dragging?0.95f:hover?0.72f:0.42f));
     for(int row=0;row<3;++row)

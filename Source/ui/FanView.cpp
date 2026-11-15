@@ -199,7 +199,11 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
             {
                 const float dist=rightEdge-static_cast<float>(x)/sx;
                 const float coverage=juce::jlimit(0.0f,1.0f,(dist+0.75f)/2.5f);
-                const float keep=juce::jlimit(0.0f,1.0f,(dist-1.0f)/24.0f);
+                // Reconstruct the noisy outer 12px entirely from the
+                // intact opposite shoulder; blend back into the original
+                // plastic only inside the shell. This hides the white scuff
+                // that alpha trimming / hue corrections alone left behind.
+                const float keep=juce::jlimit(0.0f,1.0f,(dist-12.0f)/12.0f);
                 auto smooth=cleanRight.interpolatedWith(
                     pixels.getPixelColour(x,y),keep);
                 if(dist>=0.0f && dist<19.0f && smooth.getSaturation()>0.065f
