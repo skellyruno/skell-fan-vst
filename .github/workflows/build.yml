@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: skellfan-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -24,22 +28,36 @@ jobs:
           path: build/SkellFan-ui-*.png
           if-no-files-found: error
           retention-days: 14
-      - name: Package VST3 and Standalone
+      - name: Package verified Windows VST3
         shell: pwsh
         run: |
-          $vst = Get-ChildItem build -Recurse -Directory -Filter "SkellFan.vst3" | Select-Object -First 1
-          if (-not $vst) { throw "SkellFan.vst3 bundle not found" }
+          $ErrorActionPreference = 'Stop'
+          $bundles = @(Get-ChildItem build -Recurse -Directory -Filter "SkellFan.vst3" |
+            Where-Object { $_.FullName -match '[\\/]VST3[\\/]' })
+          if ($bundles.Count -ne 1) { throw "Expected exactly one VST3 bundle, found $($bundles.Count)" }
+          $vst = $bundles[0]
           $binary = Join-Path $vst.FullName "Contents/x86_64-win/SkellFan.vst3"
-          if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
-            throw "Expected Windows x64 VST3 binary missing from bundle"
+          if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw "Windows x64 VST3 binary missing" }
+          $stream = [System.IO.File]::OpenRead($binary)
+          try {
+            $header = New-Object byte[] 2
+            if ($stream.Read($header, 0, 2) -ne 2 -or $header[0] -ne 77 -or $header[1] -ne 90) {
+              throw "VST3 binary is not a Windows PE executable (MZ missing)"
+            }
+          } finally { $stream.Dispose() }
+          $hash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash
+          Write-Host "SkellFan VST3 binary SHA256: $hash"
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item -LiteralPath $vst.FullName -Destination package -Recurse
+          $packaged = Join-Path (Join-Path (Get-Location) 'package') 'SkellFan.vst3'
+          if (-not (Test-Path -LiteralPath (Join-Path $packaged 'Contents/x86_64-win/SkellFan.vst3'))) {
+            throw "Packaged VST3 is missing expected Windows binary"
           }
-          $standalone = Get-ChildItem build -Recurse -File -Filter "SkellFan.exe" | Select-Object -First 1
-          if (-not $standalone) { throw "SkellFan.exe standalone executable not found" }
-          New-Item -ItemType Directory -Path package | Out-Null
-          Copy-Item -Recurse $vst.FullName package/
-          if ($standalone) { Copy-Item $standalone.FullName package/ }
+          Get-ChildItem package -Recurse -File | ForEach-Object {
+            Write-Host "$($_.FullName): $((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash)"
+          }
       - uses: actions/upload-artifact@v6
         with:
           retention-days: 14
-          name: SkellFan-Windows
+          name: SkellFan-Windows-VST3
           path: package/
