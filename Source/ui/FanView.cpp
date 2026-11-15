@@ -183,8 +183,14 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
                 const float dist=static_cast<float>(x)/sx-leftEdge;
                 const float coverage=juce::jlimit(0.0f,1.0f,(dist+0.75f)/2.5f);
                 const float keep=juce::jlimit(0.0f,1.0f,(dist-1.0f)/14.0f);
-                const auto smooth=cleanLeft.interpolatedWith(
+                auto smooth=cleanLeft.interpolatedWith(
                     pixels.getPixelColour(x,y),keep);
+                // Neutralize the faint cyan halo on the photograph's white
+                // shell while preserving its original alpha/shading.
+                if(dist>=0.0f && dist<19.0f && smooth.getSaturation()>0.065f
+                   && smooth.getHue()>0.43f && smooth.getHue()<0.64f)
+                    smooth=juce::Colour::fromHSV(0.0f,0.015f,
+                        smooth.getBrightness(),smooth.getFloatAlpha());
                 pixels.setPixelColour(x,y,smooth.withAlpha(
                     smooth.getFloatAlpha()*coverage));
             }
@@ -194,8 +200,12 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
                 const float dist=rightEdge-static_cast<float>(x)/sx;
                 const float coverage=juce::jlimit(0.0f,1.0f,(dist+0.75f)/2.5f);
                 const float keep=juce::jlimit(0.0f,1.0f,(dist-1.0f)/24.0f);
-                const auto smooth=cleanRight.interpolatedWith(
+                auto smooth=cleanRight.interpolatedWith(
                     pixels.getPixelColour(x,y),keep);
+                if(dist>=0.0f && dist<19.0f && smooth.getSaturation()>0.065f
+                   && smooth.getHue()>0.43f && smooth.getHue()<0.64f)
+                    smooth=juce::Colour::fromHSV(0.0f,0.015f,
+                        smooth.getBrightness(),smooth.getFloatAlpha());
                 pixels.setPixelColour(x,y,smooth.withAlpha(
                     smooth.getFloatAlpha()*coverage));
             }

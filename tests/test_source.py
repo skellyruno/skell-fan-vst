@@ -157,6 +157,11 @@ class SourceSanity(unittest.TestCase):
         for short in ('"VIB"', '"ROT"', '"TRM"', '"CHO"'):
             self.assertIn(short,editor)
         self.assertIn('const char* notes[]={"S","D","T"}',editor)
+        knob=(ROOT/'Source/ui/ChromeKnob.cpp').read_text(encoding='utf-8')
+        self.assertIn('const bool isSat=parameterId=="saturation"',knob)
+        self.assertIn('area.getBottom()-badgeHeight-1.0f*scale',knob)
+        self.assertIn('juce::Colour(0xff19552b)',knob)
+        self.assertIn('SATURATION - harmonic drive',editor)
         self.assertIn('place(saturation,542,797,77,99)',editor)
         self.assertIn('getWidth()/203.0f,getHeight()/64.0f',depth)
         self.assertIn('constexpr float width=203.0f, cy=45.0f',depth)

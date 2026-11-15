@@ -289,6 +289,9 @@ void testEditor(SkellFanAudioProcessor& processor)
                 integratedSat=child;
     check(integratedSat!=nullptr,"SAT knob remains interactive");
     if(integratedSat)
+        check(integratedSat->getTooltip().contains("SATURATION"),
+              "SAT knob tooltip identifies the integrated saturation control");
+    if(integratedSat)
     {
         const auto b=integratedSat->getBounds();
         check(b.getY()>editor->getHeight()*0.75f &&

@@ -189,11 +189,31 @@ void ChromeKnob::paint(juce::Graphics& g)
         g.drawEllipse(cx-radius-3.0f*scale,cy-radius-3.0f*scale,
                       2.0f*(radius+3.0f*scale),2.0f*(radius+3.0f*scale),1.3f*scale);
     }
-    g.setFont(Theme::font(11.0f*scale,true));
-    g.setColour(Theme::label);
+    // Screen-readable engraved captions sit below the physical knob shadow.
+    // Previously SAT rendered as ~5px gray text at 574px compact size.
+    // Give the entire RATE / SAT / WAVE row consistent label beds, with
+    // SAT highlighted. This is NOT a new button or another audio parameter.
     if (name.isNotEmpty())
-        g.drawText(name,area.withTop(cy+radius+1.0f*scale),
-                   juce::Justification::centredTop);
+    {
+        const bool isSat=parameterId=="saturation";
+        const float badgeWidth=(isSat?60.0f:66.0f)*scale;
+        const float badgeHeight=19.5f*scale;
+        const juce::Rectangle<float> badge{
+            cx-badgeWidth*0.5f,area.getBottom()-badgeHeight-1.0f*scale,
+            badgeWidth,badgeHeight};
+        g.setColour(juce::Colours::black.withAlpha(0.20f));
+        g.fillRoundedRectangle(badge.translated(0.0f,1.0f*scale),4.0f*scale);
+        g.setColour(isSat?juce::Colour(0xff19552b):juce::Colour(0xff19261e));
+        g.fillRoundedRectangle(badge,4.0f*scale);
+        g.setColour(isSat?juce::Colour(0xff65ea88).withAlpha(0.90f)
+                         :juce::Colour(0xff63796a).withAlpha(0.65f));
+        g.drawRoundedRectangle(badge.reduced(0.6f*scale),
+                               3.5f*scale,0.9f*scale);
+        g.setColour(isSat?juce::Colour(0xffeaffee):juce::Colour(0xffd8e4dc));
+        g.setFont(Theme::font((isSat?19.5f:17.0f)*scale,true));
+        g.drawFittedText(name,badge.toNearestInt(),
+                         juce::Justification::centred,1,0.95f);
+    }
 
     // Idle face remains clean: SAT 20%, Width and Mix never stick around.
     // Value feedback is reserved for direct drag, wheel and keyboard edits.
