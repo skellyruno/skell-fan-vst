@@ -38,6 +38,10 @@ jobs:
           New-Item -ItemType Directory -Path package | Out-Null
           Copy-Item -Recurse $vst.FullName package/
           if ($standalone) { Copy-Item $standalone.FullName package/ }
+          # JUCE 8's generated moduleinfo.json contains dangling commas.
+          # Keep the exact VST3 identity, but normalize into strict JSON
+          # before releasing any VST3 bundle to producers/FL Studio.
+          python tests/normalize_moduleinfo.py "package/SkellFan.vst3/Contents/Resources/moduleinfo.json"
       - uses: actions/upload-artifact@v6
         with:
           retention-days: 14

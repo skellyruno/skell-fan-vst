@@ -3,6 +3,8 @@
 These checks do not substitute for a JUCE build or an audio-host test.
 """
 import re
+import json
+import runpy
 import unittest
 from pathlib import Path
 
@@ -10,6 +12,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SourceSanity(unittest.TestCase):
+    def test_strict_vst3_moduleinfo_packaging(self):
+        workflow=(ROOT / '.github/workflows/build.yml').read_text(encoding='utf-8')
+        self.assertIn('python tests/normalize_moduleinfo.py',workflow)
+        norm=runpy.run_path(str(ROOT/'tests/normalize_moduleinfo.py'))
+        sample='{"Classes":[{"Name":"value,} literal",},],"Factory Info":{"Vendor":"Skell Audio",},}'
+        valid=norm['strip_trailing_commas'](sample)
+        result=json.loads(valid)
+        self.assertEqual(result['Classes'][0]['Name'],'value,} literal')
+        self.assertEqual(result['Factory Info']['Vendor'],'Skell Audio')
+
     def test_required_source_files(self):
         cmake = (ROOT / 'CMakeLists.txt').read_text(encoding='utf-8')
         paths = re.findall(r'\b(?:Source/[\w./-]+\.(?:cpp|h)|Assets/[\w_-]+\.png)\b', cmake)
