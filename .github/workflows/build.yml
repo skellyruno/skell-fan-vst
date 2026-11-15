@@ -3,7 +3,13 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, fix/skellfan-controls-20261114]
+
+# One active draft-branch build at a time; main, production, release and
+# manually dispatched validations are never superseded or cancelled.
+concurrency:
+  group: skellfan-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/production' && github.ref != 'refs/heads/release' }}
 
 jobs:
   windows:
