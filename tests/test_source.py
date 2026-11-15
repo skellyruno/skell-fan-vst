@@ -240,6 +240,11 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('skellcore::ui::drawSkullKeyMark',fan)
         self.assertIn('g.reduceClipRegion(rotorAperture)',fan)
         self.assertIn('borrowing texture from the equivalent LEFT shoulder',fan)
+        self.assertLess(fan.index('Blend the original SAT tower'),
+                        fan.index('jagged black/white'),
+                        'Exterior silhouette must be clipped AFTER mirroring')
+        self.assertIn('107.0f,114.0f',fan)
+        self.assertNotIn('skeletonPath',fan)
         self.assertNotIn('skeletonPath',fan)
         self.assertNotIn('ghost(270.0f',fan)
         self.assertIn('The source photograph includes an unrelated saturated arc', fan)

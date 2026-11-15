@@ -77,6 +77,33 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
         correctSide(177,247,713,927);
         correctSide(704,774,713,927);
 
+        // Blend the original SAT tower out of the photographed casing by
+        // borrowing texture from the equivalent LEFT shoulder. The fan body
+        // is approximately symmetric, unlike the detached SAT module.
+        // Feather all four sides, preserve authentic lighting/noise, and
+        // never fill the region with a flat white geometric blob.
+        // Executed once per theme change on the message thread.
+        const int x0=juce::jlimit(0,body.getWidth(),juce::roundToInt(619.0f*sx));
+        const int x1=juce::jlimit(0,body.getWidth(),juce::roundToInt(763.0f*sx));
+        const int y0=juce::jlimit(0,body.getHeight(),juce::roundToInt(599.0f*sy));
+        const int y1=juce::jlimit(0,body.getHeight(),juce::roundToInt(751.0f*sy));
+        for(int y=y0;y<y1;++y)
+            for(int x=x0;x<x1;++x)
+            {
+                const int mirrorX=body.getWidth()-1-x;
+                if(mirrorX<0 || mirrorX>=body.getWidth()) continue;
+                const auto original=pixels.getPixelColour(x,y);
+                const auto donor=pixels.getPixelColour(mirrorX,y);
+                const float fx=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(x-x0)/(12.0f*sx)),
+                    juce::jlimit(0.0f,1.0f,(x1-x-1)/(13.0f*sx)));
+                const float fy=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(y-y0)/(12.0f*sy)),
+                    juce::jlimit(0.0f,1.0f,(y1-y-1)/(17.0f*sy)));
+                const float weight=fx*fy;
+                if(weight>0.0f)
+                    pixels.setPixelColour(x,y,original.interpolatedWith(donor,weight));
+            }
         // The same photographed inserts also contain jagged black/white
         // alpha fringes OUTSIDE the clean white plastic shell. Hue changes
         // cannot correct black pixels. Clip only these two small outer
@@ -107,33 +134,7 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
                 pixels.setPixelColour(x,y,juce::Colours::transparentBlack);
         }
 
-        // Blend the original SAT tower out of the photographed casing by
-        // borrowing texture from the equivalent LEFT shoulder. The fan body
-        // is approximately symmetric, unlike the detached SAT module.
-        // Feather all four sides, preserve authentic lighting/noise, and
-        // never fill the region with a flat white geometric blob.
-        // Executed once per theme change on the message thread.
-        const int x0=juce::jlimit(0,body.getWidth(),juce::roundToInt(619.0f*sx));
-        const int x1=juce::jlimit(0,body.getWidth(),juce::roundToInt(763.0f*sx));
-        const int y0=juce::jlimit(0,body.getHeight(),juce::roundToInt(599.0f*sy));
-        const int y1=juce::jlimit(0,body.getHeight(),juce::roundToInt(751.0f*sy));
-        for(int y=y0;y<y1;++y)
-            for(int x=x0;x<x1;++x)
-            {
-                const int mirrorX=body.getWidth()-1-x;
-                if(mirrorX<0 || mirrorX>=body.getWidth()) continue;
-                const auto original=pixels.getPixelColour(x,y);
-                const auto donor=pixels.getPixelColour(mirrorX,y);
-                const float fx=juce::jmin(
-                    juce::jlimit(0.0f,1.0f,(x-x0)/(12.0f*sx)),
-                    juce::jlimit(0.0f,1.0f,(x1-x-1)/(13.0f*sx)));
-                const float fy=juce::jmin(
-                    juce::jlimit(0.0f,1.0f,(y-y0)/(12.0f*sy)),
-                    juce::jlimit(0.0f,1.0f,(y1-y-1)/(17.0f*sy)));
-                const float weight=fx*fy;
-                if(weight>0.0f)
-                    pixels.setPixelColour(x,y,original.interpolatedWith(donor,weight));
-            }
+
     }
     rotor=Theme::fanArtworkForSkin(rawRotor,skin);
     blur=Theme::fanArtworkForSkin(rawBlur,skin);
@@ -245,7 +246,7 @@ void FanView::paint(juce::Graphics& g)
     g.drawEllipse(center.x-58.0f,center.y-58.0f,116.0f,116.0f,1.0f);
     {
         juce::Path skullClip;
-        skullClip.addEllipse(center.x-57.0f,center.y-57.0f,114.0f,114.0f);
+        skullClip.addEllipse(center.x-57.0f,center.y-57.0f,107.0f,114.0f);
         juce::Graphics::ScopedSaveState skullSafe(g);
         g.reduceClipRegion(skullClip);
         constexpr float skullScale=4.0f;

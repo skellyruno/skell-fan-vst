@@ -60,11 +60,13 @@ void SkellFanAudioProcessorEditor::Stage::paint(juce::Graphics& g)
 {
     g.addTransform(juce::AffineTransform::scale(getWidth()/Theme::W,getHeight()/Theme::H));
     g.fillAll(Theme::black);
-    juce::ColourGradient floor(juce::Colour(0xff07090a),0,500,
+    // Seamless dark-stage gradient: no hard grey stripe behind the rotor.
+    juce::ColourGradient floor(Theme::black,0,0,
                                juce::Colour(0xff101216),0,984,false);
-    floor.addColour(0.65,juce::Colour(0xff121417));
+    floor.addColour(0.56,Theme::black);
+    floor.addColour(0.82,juce::Colour(0xff0b0d10));
     g.setGradientFill(floor);
-    g.fillRect(0,500,956,484);
+    g.fillRect(0,0,956,984);
 }
 void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
 {
