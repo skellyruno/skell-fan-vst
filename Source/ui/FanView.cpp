@@ -120,50 +120,84 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
                 if(weight>0.0f)
                     pixels.setPixelColour(x,y,original.interpolatedWith(donor,weight));
             }
-        // The same photographed inserts also contain jagged black/white
-        // alpha fringes OUTSIDE the clean white plastic shell. Hue changes
-        // cannot correct black pixels. Clip only these two small outer
-        // shoulder wedges against the actual casing silhouette instead.
-        // All coordinates are relative to the original 956x984 body PNG.
-        const int yStart=juce::jlimit(0,body.getHeight(),juce::roundToInt(710*sy));
-        const int yEnd=juce::jlimit(0,body.getHeight(),juce::roundToInt(853*sy));
-        for(int y=yStart;y<yEnd;++y)
+        // Repair the tiny photographed SAT marker remnant on the upper
+        // shoulder using clean plastic from the same vertical texture.
+        // This touches only 619..662 by 686..703 of the body, never audio.
+        const int cleanRow=juce::jlimit(0,body.getHeight()-1,
+                                       juce::roundToInt(681.0f*sy));
+        for(int y=juce::jmax(0,juce::roundToInt(686.0f*sy));
+                y<juce::jmin(body.getHeight(),juce::roundToInt(703.0f*sy));++y)
+            for(int x=juce::jmax(0,juce::roundToInt(619.0f*sx));
+                    x<juce::jmin(body.getWidth(),juce::roundToInt(662.0f*sx));++x)
+            {
+                const float lx=static_cast<float>(x)/sx;
+                const float ly=static_cast<float>(y)/sy;
+                const float weight=juce::jmin(
+                     juce::jlimit(0.0f,1.0f,(lx-619.0f)/6.0f),
+                     juce::jlimit(0.0f,1.0f,(662.0f-lx)/6.0f))
+                   *juce::jmin(
+                     juce::jlimit(0.0f,1.0f,(ly-686.0f)/4.0f),
+                     juce::jlimit(0.0f,1.0f,(703.0f-ly)/4.0f));
+                const auto c=pixels.getPixelColour(x,y);
+                pixels.setPixelColour(x,y,c.interpolatedWith(
+                       pixels.getPixelColour(x,cleanRow),weight));
+            }
+
+        // The original photograph's alpha edge has loose white and black
+        // speckles on BOTH shoulders, especially below y=853. Color/hue
+        // neutralization cannot repair those alpha holes. Trace a smooth
+        // casing silhouette through the original white plastic edge, then
+        // reconstruct an antialiased border from intact inside pixels.
+        // Replaces the old brittle, row-limited rectangular cutout.
+        constexpr float shell[][3]={
+            {710.0f,204.0f,751.0f},{750.0f,190.0f,759.0f},
+            {800.0f,178.0f,767.0f},{850.0f,167.0f,773.0f},
+            {900.0f,153.0f,780.0f},{930.0f,158.0f,780.0f},
+            {950.0f,173.0f,767.0f},{970.0f,205.0f,737.0f},
+            {979.0f,239.0f,717.0f}
+        };
+        for(int y=juce::jmax(0,juce::roundToInt(shell[0][0]*sy));
+                y<juce::jmin(body.getHeight(),juce::roundToInt(979.0f*sy));++y)
         {
             const float fy=static_cast<float>(y)/sy;
-            // Symmetric physical shell, not the prior overly tight right
-            // cutoff that carved a sharp black notch into the white base.
-            const float rightEdge=758.0f+0.22f*(fy-710.0f);
-            const float leftEdge=Theme::W-rightEdge;
-            const int leftLimit=juce::jlimit(0,body.getWidth(),
-                                            juce::roundToInt(leftEdge*sx));
+            int segment=0;
+            while(segment<7 && fy>shell[segment+1][0])++segment;
+            const float alpha=juce::jlimit(0.0f,1.0f,
+                (fy-shell[segment][0])/(shell[segment+1][0]-shell[segment][0]));
+            const float leftEdge=juce::jmap(alpha,shell[segment][1],shell[segment+1][1]);
+            const float rightEdge=juce::jmap(alpha,shell[segment][2],shell[segment+1][2]);
+            const int leftDonor=juce::jlimit(0,body.getWidth()-1,
+                juce::roundToInt((leftEdge+12.0f)*sx));
+            const int rightDonor=juce::jlimit(0,body.getWidth()-1,
+                juce::roundToInt((rightEdge-12.0f)*sx));
+            const auto cleanLeft=pixels.getPixelColour(leftDonor,y);
+            const auto cleanRight=pixels.getPixelColour(rightDonor,y);
+            const int leftEnd=juce::jlimit(0,body.getWidth(),
+                juce::roundToInt((leftEdge+15.0f)*sx));
             const int rightStart=juce::jlimit(0,body.getWidth(),
-                                            juce::roundToInt(rightEdge*sx));
-            // Only clear local exterior wedges; do not touch the floor,
-            // blades, hub, rotor or the physical control deck.
-            const int leftStart=juce::jlimit(0,leftLimit,
-                                            juce::roundToInt(160.0f*sx));
-            const int rightLimit=juce::jlimit(rightStart,body.getWidth(),
-                                            juce::roundToInt(795.0f*sx));
-            // Antialias the casing contour over three logical pixels instead
-            // of exposing stair-stepped black/white cutout fragments.
-            const int feather=juce::jmax(1,juce::roundToInt(3.0f*sx));
-            for(int x=leftStart;x<juce::jmin(body.getWidth(),leftLimit+feather);++x)
+                juce::roundToInt((rightEdge-15.0f)*sx));
+            for(int x=juce::jmax(0,juce::roundToInt(125.0f*sx));x<leftEnd;++x)
             {
-                const auto c=pixels.getPixelColour(x,y);
-                const float coverage=juce::jlimit(0.0f,1.0f,
-                    (static_cast<float>(x)/sx-leftEdge)/3.0f);
-                pixels.setPixelColour(x,y,c.withAlpha(c.getFloatAlpha()*coverage));
+                const float dist=static_cast<float>(x)/sx-leftEdge;
+                const float coverage=juce::jlimit(0.0f,1.0f,(dist+0.75f)/2.5f);
+                const float keep=juce::jlimit(0.0f,1.0f,(dist-1.0f)/14.0f);
+                const auto smooth=cleanLeft.interpolatedWith(
+                    pixels.getPixelColour(x,y),keep);
+                pixels.setPixelColour(x,y,smooth.withAlpha(
+                    smooth.getFloatAlpha()*coverage));
             }
-            for(int x=juce::jmax(0,rightStart-feather);x<rightLimit;++x)
+            for(int x=rightStart;x<juce::jmin(body.getWidth(),
+                      juce::roundToInt(835.0f*sx));++x)
             {
-                const auto c=pixels.getPixelColour(x,y);
-                const float coverage=juce::jlimit(0.0f,1.0f,
-                    (rightEdge-static_cast<float>(x)/sx)/3.0f);
-                pixels.setPixelColour(x,y,c.withAlpha(c.getFloatAlpha()*coverage));
+                const float dist=rightEdge-static_cast<float>(x)/sx;
+                const float coverage=juce::jlimit(0.0f,1.0f,(dist+0.75f)/2.5f);
+                const float keep=juce::jlimit(0.0f,1.0f,(dist-1.0f)/14.0f);
+                const auto smooth=cleanRight.interpolatedWith(
+                    pixels.getPixelColour(x,y),keep);
+                pixels.setPixelColour(x,y,smooth.withAlpha(
+                    smooth.getFloatAlpha()*coverage));
             }
         }
-
-
     }
     rotor=Theme::fanArtworkForSkin(rawRotor,skin);
     blur=Theme::fanArtworkForSkin(rawBlur,skin);

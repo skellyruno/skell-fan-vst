@@ -330,6 +330,10 @@ void testEditor(SkellFanAudioProcessor& processor)
                   "Antialiased physical casing has no outside white fringe");
             check(snapshot.getPixelAt(650,711).getBrightness()>0.35f,
                   "No mirrored duplicate fan-button graphic on right shoulder");
+            check(snapshot.getPixelAt(631,694).getBrightness()>0.62f,
+                  "Original SAT photo remnant is removed from the shoulder");
+            check(snapshot.getPixelAt(765,820).getBrightness()>0.50f,
+                  "Right casing edge uses smooth clean plastic, not pixel noise");
             check(snapshot.getPixelAt(520,376).getBrightness()<0.45f,
                   "Only the skull face is visible; the key shaft is clipped");
         }
