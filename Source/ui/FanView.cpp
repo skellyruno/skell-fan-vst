@@ -93,7 +93,23 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
                 const int mirrorX=body.getWidth()-1-x;
                 if(mirrorX<0 || mirrorX>=body.getWidth()) continue;
                 const auto original=pixels.getPixelColour(x,y);
-                const auto donor=pixels.getPixelColour(mirrorX,y);
+                // Mirroring x=284..322 at y=700..734 would clone the baked
+                // left-hand motion-button graphic onto the right shoulder.
+                // Source the same white plastic a little further inboard
+                // in that small area and feather to the symmetric texture.
+                const float lx=static_cast<float>(x)/sx;
+                const float ly=static_cast<float>(y)/sy;
+                const float coverButtonX=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(lx-622.0f)/10.0f),
+                    juce::jlimit(0.0f,1.0f,(688.0f-lx)/10.0f));
+                const float coverButtonY=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(ly-688.0f)/10.0f),
+                    juce::jlimit(0.0f,1.0f,(748.0f-ly)/12.0f));
+                const int cleanX=juce::jlimit(0,body.getWidth()-1,
+                    mirrorX+juce::roundToInt(70.0f*sx));
+                const auto donor=pixels.getPixelColour(mirrorX,y)
+                    .interpolatedWith(pixels.getPixelColour(cleanX,y),
+                                      coverButtonX*coverButtonY);
                 const float fx=juce::jmin(
                     juce::jlimit(0.0f,1.0f,(x-x0)/(12.0f*sx)),
                     juce::jlimit(0.0f,1.0f,(x1-x-1)/(13.0f*sx)));
@@ -114,10 +130,10 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
         for(int y=yStart;y<yEnd;++y)
         {
             const float fy=static_cast<float>(y)/sy;
-            const float leftEdge=fy<740.0f
-                 ? 205.0f-0.1f*(fy-710.0f)
-                 : 202.0f-0.385f*(fy-740.0f);
-            const float rightEdge=743.0f+0.22f*(fy-710.0f);
+            // Symmetric physical shell, not the prior overly tight right
+            // cutoff that carved a sharp black notch into the white base.
+            const float rightEdge=758.0f+0.22f*(fy-710.0f);
+            const float leftEdge=Theme::W-rightEdge;
             const int leftLimit=juce::jlimit(0,body.getWidth(),
                                             juce::roundToInt(leftEdge*sx));
             const int rightStart=juce::jlimit(0,body.getWidth(),
@@ -128,10 +144,23 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
                                             juce::roundToInt(160.0f*sx));
             const int rightLimit=juce::jlimit(rightStart,body.getWidth(),
                                             juce::roundToInt(795.0f*sx));
-            for(int x=leftStart;x<leftLimit;++x)
-                pixels.setPixelColour(x,y,juce::Colours::transparentBlack);
-            for(int x=rightStart;x<rightLimit;++x)
-                pixels.setPixelColour(x,y,juce::Colours::transparentBlack);
+            // Antialias the casing contour over three logical pixels instead
+            // of exposing stair-stepped black/white cutout fragments.
+            const int feather=juce::jmax(1,juce::roundToInt(3.0f*sx));
+            for(int x=leftStart;x<juce::jmin(body.getWidth(),leftLimit+feather);++x)
+            {
+                const auto c=pixels.getPixelColour(x,y);
+                const float coverage=juce::jlimit(0.0f,1.0f,
+                    (static_cast<float>(x)/sx-leftEdge)/3.0f);
+                pixels.setPixelColour(x,y,c.withAlpha(c.getFloatAlpha()*coverage));
+            }
+            for(int x=juce::jmax(0,rightStart-feather);x<rightLimit;++x)
+            {
+                const auto c=pixels.getPixelColour(x,y);
+                const float coverage=juce::jlimit(0.0f,1.0f,
+                    (rightEdge-static_cast<float>(x)/sx)/3.0f);
+                pixels.setPixelColour(x,y,c.withAlpha(c.getFloatAlpha()*coverage));
+            }
         }
 
 

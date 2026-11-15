@@ -244,6 +244,9 @@ class SourceSanity(unittest.TestCase):
                         fan.index('jagged black/white'),
                         'Exterior silhouette must be clipped AFTER mirroring')
         self.assertIn('107.0f,114.0f',fan)
+        self.assertIn('coverButtonX*coverButtonY',fan)
+        self.assertIn('const float leftEdge=Theme::W-rightEdge',fan)
+        self.assertIn('const int feather=',fan)
         self.assertNotIn('skeletonPath',fan)
         self.assertNotIn('skeletonPath',fan)
         self.assertNotIn('ghost(270.0f',fan)

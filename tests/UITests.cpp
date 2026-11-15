@@ -325,11 +325,13 @@ void testEditor(SkellFanAudioProcessor& processor)
                   "Stray green inserts do not protrude beside the console");
             check(snapshot.getPixelAt(674,649).getAlpha()!=0,
                   "Fan cavity is rendered behind the former SAT tower");
-            check(snapshot.getPixelAt(195,725).getBrightness()<0.17f
-                  && snapshot.getPixelAt(751,725).getBrightness()<0.17f,
-                  "No jagged photo fringe outside fan base at either shoulder");
-            check(snapshot.getPixelAt(185,740).getBrightness()<0.17f,
-                  "Left base shoulder remains clean under magnification");
+            check(snapshot.getPixelAt(185,725).getBrightness()<0.17f
+                  && snapshot.getPixelAt(774,725).getBrightness()<0.17f,
+                  "Antialiased physical casing has no outside white fringe");
+            check(snapshot.getPixelAt(650,711).getBrightness()>0.35f,
+                  "No mirrored duplicate fan-button graphic on right shoulder");
+            check(snapshot.getPixelAt(520,376).getBrightness()<0.45f,
+                  "Only the skull face is visible; the key shaft is clipped");
         }
         const auto file=juce::File::getCurrentWorkingDirectory().getChildFile(
             "SkellFan-ui-"+juce::String(sz[0])+"x"+juce::String(sz[1])+".png");
