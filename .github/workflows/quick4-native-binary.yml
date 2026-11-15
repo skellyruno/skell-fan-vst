@@ -4,6 +4,7 @@ on:
     branches: [fix/skellfan-controls-20261114]
     paths:
       - CMakeLists.txt
+      - Source/**
       - tests/Quick4.cpp
       - .github/workflows/quick4-native-binary.yml
   workflow_dispatch:

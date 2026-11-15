@@ -168,14 +168,16 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
             const float rightEdge=juce::jmap(alpha,shell[segment][2],shell[segment+1][2]);
             const int leftDonor=juce::jlimit(0,body.getWidth()-1,
                 juce::roundToInt((leftEdge+12.0f)*sx));
+            // Sample the intact symmetric LEFT shell: the photographed
+            // right-hand donor was itself contaminated with bright specks.
             const int rightDonor=juce::jlimit(0,body.getWidth()-1,
-                juce::roundToInt((rightEdge-12.0f)*sx));
+                juce::roundToInt((Theme::W-rightEdge+23.0f)*sx));
             const auto cleanLeft=pixels.getPixelColour(leftDonor,y);
             const auto cleanRight=pixels.getPixelColour(rightDonor,y);
             const int leftEnd=juce::jlimit(0,body.getWidth(),
                 juce::roundToInt((leftEdge+15.0f)*sx));
             const int rightStart=juce::jlimit(0,body.getWidth(),
-                juce::roundToInt((rightEdge-15.0f)*sx));
+                juce::roundToInt((rightEdge-26.0f)*sx));
             for(int x=juce::jmax(0,juce::roundToInt(125.0f*sx));x<leftEnd;++x)
             {
                 const float dist=static_cast<float>(x)/sx-leftEdge;
@@ -191,7 +193,7 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
             {
                 const float dist=rightEdge-static_cast<float>(x)/sx;
                 const float coverage=juce::jlimit(0.0f,1.0f,(dist+0.75f)/2.5f);
-                const float keep=juce::jlimit(0.0f,1.0f,(dist-1.0f)/14.0f);
+                const float keep=juce::jlimit(0.0f,1.0f,(dist-1.0f)/24.0f);
                 const auto smooth=cleanRight.interpolatedWith(
                     pixels.getPixelColour(x,y),keep);
                 pixels.setPixelColour(x,y,smooth.withAlpha(

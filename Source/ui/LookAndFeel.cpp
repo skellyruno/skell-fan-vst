@@ -28,6 +28,20 @@ juce::Font SkellFanLookAndFeel::getPopupMenuFont()
 {
     return Theme::font(14.0f,true);
 }
+void SkellFanLookAndFeel::drawCornerResizer(juce::Graphics& g,int w,int h,
+                                           bool hover,bool dragging)
+{
+    // The default JUCE diagonal white scratches sat outside the fan housing.
+    // Keep the resize target functional but integrate its artwork into Skell.
+    const auto palette=skellcore::ui::skullPalette(skin);
+    const float x=static_cast<float>(w),y=static_cast<float>(h);
+    g.setColour(palette.background.withAlpha(0.94f));
+    g.fillRoundedRectangle(x-17.0f,y-17.0f,16.0f,16.0f,4.0f);
+    g.setColour(palette.accent.withAlpha(dragging?0.95f:hover?0.72f:0.42f));
+    for(int row=0;row<3;++row)
+        for(int col=0;col<=row;++col)
+            g.fillEllipse(x-5.5f-col*4.2f,y-5.5f-row*4.2f,2.0f,2.0f);
+}
 void SkellFanLookAndFeel::drawPopupMenuBackground(juce::Graphics& g,int w,int h)
 {
     const auto palette=skellcore::ui::skullPalette(skin);
