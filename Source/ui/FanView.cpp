@@ -90,6 +90,36 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
             }
     }
 
+    // The two neon side inserts beside the lower control deck are baked
+    // into the still photograph, not part of the real moving rotor.
+    // Remove their hue only; preserve the source alpha and subtle shading.
+    // This runs once per UI theme switch, never in the DSP or paint loop.
+    if(body.isValid())
+    {
+        juce::Image::BitmapData pixels(body,juce::Image::BitmapData::readWrite);
+        const float sx=static_cast<float>(body.getWidth())/Theme::W;
+        const float sy=static_cast<float>(body.getHeight())/Theme::H;
+        const auto correctSide=[&](int x0,int x1,int y0,int y1)
+        {
+            const int left=juce::jlimit(0,body.getWidth(),juce::roundToInt(x0*sx));
+            const int right=juce::jlimit(0,body.getWidth(),juce::roundToInt(x1*sx));
+            const int top=juce::jlimit(0,body.getHeight(),juce::roundToInt(y0*sy));
+            const int bottom=juce::jlimit(0,body.getHeight(),juce::roundToInt(y1*sy));
+            for(int y=top;y<bottom;++y)
+                for(int x=left;x<right;++x)
+                {
+                    const auto c=pixels.getPixelColour(x,y);
+                    if(c.getFloatAlpha()<0.07f || c.getSaturation()<0.22f
+                       || c.getHue()<0.20f || c.getHue()>0.49f) continue;
+                    const float value=juce::jlimit(0.64f,0.84f,
+                        0.65f+c.getBrightness()*0.22f);
+                    pixels.setPixelColour(x,y,juce::Colour::fromHSV(
+                        0.55f,0.028f,value,c.getFloatAlpha()));
+                }
+        };
+        correctSide(177,247,713,927);
+        correctSide(704,774,713,927);
+    }
     rotor=Theme::fanArtworkForSkin(rawRotor,skin);
     blur=Theme::fanArtworkForSkin(rawBlur,skin);
     repaint();

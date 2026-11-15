@@ -92,12 +92,25 @@ void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     g.setColour(juce::Colour(0xff071309).withAlpha(0.64f));
     g.drawRoundedRectangle(r.expanded(5.0f,4.0f),16.0f,1.7f);
     Theme::metal(g,r);
-    // Mask the photographed SAT control artifact, leaving the real knob above.
-    const juce::Rectangle<float> satHousing{639.0f,614.0f,77.0f,87.0f};
-    g.setColour(juce::Colour(0xff070d09).withAlpha(0.97f));
-    g.fillRoundedRectangle(satHousing,12.0f);
-    g.setColour(juce::Colour(0xff517d5d).withAlpha(0.82f));
-    g.drawRoundedRectangle(satHousing.reduced(1.0f),11.0f,1.5f);
+    // The original photo has a baked-in SAT dial, arc and text. Cover the
+    // complete old control with a satin-aluminium socket that belongs to
+    // the white housing; the interactive knob is painted above this plate.
+    const juce::Rectangle<float> satHousing{637.0f,609.0f,81.0f,122.0f};
+    g.setColour(juce::Colours::black.withAlpha(0.24f));
+    g.fillRoundedRectangle(satHousing.translated(1.7f,2.8f),20.0f);
+    juce::ColourGradient satMetal(juce::Colour(0xffe2e4e6),satHousing.getTopLeft(),
+                                  juce::Colour(0xff9da2a8),satHousing.getBottomRight(),false);
+    satMetal.addColour(0.48,juce::Colour(0xffc1c7cb));
+    g.setGradientFill(satMetal);
+    g.fillRoundedRectangle(satHousing,20.0f);
+    g.setColour(juce::Colour(0xff717b7e));
+    g.drawRoundedRectangle(satHousing.reduced(1.0f),19.0f,1.6f);
+    g.setColour(juce::Colour(0xfff6fcf7).withAlpha(0.62f));
+    g.drawRoundedRectangle(satHousing.reduced(3.0f),17.0f,1.0f);
+    g.setColour(juce::Colour(0xff30383a));
+    g.setFont(Theme::font(14.0f,true));
+    g.drawText("SAT",juce::Rectangle<float>{639.0f,700.0f,77.0f,19.0f},
+               juce::Justification::centred);
     // Small machined cross screws are drawn on the outer bezel; they never
     // obstruct knobs, DEPTH, preset keys, or the engraved bottom nameplate.
     constexpr std::array<std::array<float,2>,4> screws {{
@@ -320,7 +333,7 @@ void SkellFanAudioProcessorEditor::resized()
     const float noteX[]={565,603,641};
     for(int i=0;i<3;++i)place(*noteKeys[i],noteX[i],752,36,30);
     place(rate,476,791,85,104);place(syncRate,476,791,85,104);
-    place(wave,601,791,85,104);place(saturation,648,624,57,70);
+    place(wave,601,791,85,104);place(saturation,648,622,57,70);
     place(scope,18,729,200,136);
     place(rateReadout,476,907,239,24);
     place(outputMeter,25,743,116,183);

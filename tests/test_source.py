@@ -261,6 +261,10 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('processor.setMotionPaused(paused)',editor)
         self.assertIn('PAUSED | RATE SAVED',editor)
         self.assertIn('satHousing',editor)
+        fan=(ROOT/'Source/ui/FanView.cpp').read_text(encoding='utf-8')
+        self.assertIn('correctSide(177,247,713,927)',fan)
+        self.assertIn('correctSide(704,774,713,927)',fan)
+        self.assertNotIn('g.fillRoundedRectangle(satHousing,12.0f)',editor)
         self.assertIn('setProperty("uiWidth",574,nullptr)',proc)
 
     def test_live_theme_and_custom_preset_menus(self):

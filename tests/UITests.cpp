@@ -302,6 +302,17 @@ void testEditor(SkellFanAudioProcessor& processor)
         if(!snapshot.isValid())continue;
         check(snapshot.getPixelAt(sz[0]/2,sz[1]/2).getAlpha()!=0,
               "Fan hub is visible in actual JUCE snapshot");
+        if(sz[0]==956 && sz[1]==984)
+        {
+            // Check *rendered pixels* from the user-reported problem areas.
+            const auto leftSide=snapshot.getPixelAt(198,849);
+            const auto rightSide=snapshot.getPixelAt(739,852);
+            check(leftSide.getGreen()<=leftSide.getRed()+35
+                  && rightSide.getGreen()<=rightSide.getRed()+35,
+                  "Stray green inserts do not protrude beside the console");
+            check(snapshot.getPixelAt(644,655).getBrightness()>0.30f,
+                  "SAT socket is silver rather than a floating black block");
+        }
         const auto file=juce::File::getCurrentWorkingDirectory().getChildFile(
             "SkellFan-ui-"+juce::String(sz[0])+"x"+juce::String(sz[1])+".png");
         juce::FileOutputStream output(file);
