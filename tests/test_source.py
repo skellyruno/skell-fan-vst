@@ -166,6 +166,10 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('getWidth()/203.0f,getHeight()/64.0f',depth)
         self.assertIn('constexpr float width=203.0f, cy=45.0f',depth)
         self.assertIn('saturation(p,"saturation","SAT",false,true)',editor)
+        keys=(ROOT/'Source/ui/KeyButton.cpp').read_text(encoding='utf-8')
+        self.assertIn('lit?Theme::cyan:juce::Colour(0xff33483a)',keys)
+        self.assertIn('const auto offTop=juce::Colour(0xff77877e)',keys)
+        self.assertNotIn('tint.interpolatedWith(juce::Colours::white,.45f)',keys)
         self.assertIn('"DRY/WET"',top)
 
     def test_skellcore_dependency_identity_and_compatibility(self):

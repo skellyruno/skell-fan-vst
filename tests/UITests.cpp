@@ -339,6 +339,16 @@ void testEditor(SkellFanAudioProcessor& processor)
                   "Right casing edge uses smooth clean plastic, not pixel noise");
             check(snapshot.getPixelAt(520,376).getBrightness()<0.45f,
                   "Only the skull face is visible; the key shaft is clipped");
+            // When CHORUS is active, the CHO hardware tile must be brighter
+            // green than inactive ROT: selection must not be ambiguous.
+            const auto activeChorus=snapshot.getPixelAt(431,845);
+            const auto inactiveRotary=snapshot.getPixelAt(325,845);
+            check(activeChorus.getGreen()>inactiveRotary.getGreen()+35,
+                  "Active CHORUS illuminates clearly above the inactive ROT key");
+            const auto selectedManual=snapshot.getPixelAt(498,769);
+            const auto inactiveHost=snapshot.getPixelAt(535,769);
+            check(selectedManual.getGreen()>inactiveHost.getGreen()+18,
+                  "Manual clock key is visibly more illuminated than Host");
         }
         const auto file=juce::File::getCurrentWorkingDirectory().getChildFile(
             "SkellFan-ui-"+juce::String(sz[0])+"x"+juce::String(sz[1])+".png");

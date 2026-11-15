@@ -3,7 +3,7 @@
 **When asked “current UI,” “show UI,” or “screenshot”:** inspect THIS repository's newest actual `Source/PluginEditor` C++ implementation. Build the genuine JUCE editor with the native Linux development UI target and capture **4 screenshots locally**. Do not use ImageGen, a painted mockup, an audio WAV renderer, stale captures, or GitHub Actions screenshot jobs. If local source compilation is unavailable, say what is missing rather than substituting an invented screenshot.
 
 - Target: `SkellFanQuick4`; CMake: `-DSKELLFAN_BUILD_UI_QUICK4=ON`; `--output <folder>` captures four real scenes by default, `--full` intentionally runs the deep visual audit.
-- Status: **wired, native check pending**. "Wired" is not tested; never claim a successful local compile without a real build and 4/4 PNG result.
+- Status: **native Quick4 compiled and locally verified** on the November 15, 2026 draft UI lineage, with both 4/4 and 8/8 genuine JUCE editor frames captured via local Xvfb. Rebuild after each new source change; previous success does not verify the next commit.
 - Note: real moving fan, alternate skin and audio-driven state supported.
 - Shared router: `skellyruno/skellcore-vst-template/tools/quick4_projects.py`.
 - Shared policy and rollout: `skellyruno/skellcore-vst-template/docs/PLUGIN_QUICK4_ROLLOUT.md`.

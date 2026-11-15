@@ -13,22 +13,34 @@ void KeyButton::paintButton(juce::Graphics& g,bool hover,bool down)
     const bool lit=getToggleState();
     g.setColour(juce::Colours::black.withAlpha(.3f));
     g.fillRoundedRectangle(r.translated(1.0f,3.0f),4.0f);
-    juce::ColourGradient gradient((lit?tint:tint.interpolatedWith(juce::Colours::white,.45f))
-                                     .brighter(hover?.12f:0.0f),r.getTopLeft(),
-          (lit?tint:tint.interpolatedWith(juce::Colour(0xff8c8f93),.46f))
-                                     .darker(down?.2f:0.0f),r.getBottomRight(),false);
+    // A genuine selection indicator: only the active mode/sync key is
+    // illuminated. Previously inactive keys borrowed their individual bright
+    // tint, so ROT and TRM looked ON while the actual mode was CHO.
+    // The same neutral-off treatment makes the manual/host clock obvious.
+    const auto selected=Theme::cyan.interpolatedWith(tint,0.25f);
+    const auto offTop=juce::Colour(0xff77877e);
+    const auto offBottom=juce::Colour(0xff46574d);
+    const auto topColour=(lit?selected.brighter(0.05f):offTop)
+                             .brighter(hover?0.10f:0.0f);
+    const auto bottomColour=(lit?selected.darker(0.37f):offBottom)
+                                .darker(down?0.16f:0.0f);
+    juce::ColourGradient gradient(topColour,r.getTopLeft(),
+                                  bottomColour,r.getBottomRight(),false);
     g.setGradientFill(gradient);
-    g.fillRoundedRectangle(r.reduced(lit?2.0f:0.0f),4.0f);
-    g.setColour(lit?tint.brighter(.5f):juce::Colour(0xff9ca0a4));
-    g.drawRoundedRectangle(r.reduced(1.0f),4.0f,lit?2.0f:1.0f);
-    if(lit&&!isSmall)
+    g.fillRoundedRectangle(r.reduced(lit?1.2f:0.0f),4.0f);
+    g.setColour(lit?Theme::cyan:juce::Colour(0xff33483a));
+    g.drawRoundedRectangle(r.reduced(0.9f),4.0f,lit?2.2f:1.0f);
+    if(lit && !isSmall)
     {
-        g.setColour(juce::Colours::white.withAlpha(.15f));
-        g.fillRoundedRectangle(r.reduced(7.0f),5.0f);
+        // The narrow inner rim reads as a pressed/engaged hardware key.
+        g.setColour(juce::Colour(0xffeaffed).withAlpha(0.27f));
+        g.drawRoundedRectangle(r.reduced(5.0f),3.0f,1.0f);
+        g.setColour(juce::Colours::black.withAlpha(0.13f));
+        g.fillRoundedRectangle(r.reduced(9.0f),3.0f);
     }
     if(isSmall)
     {
-        g.setColour(Theme::label);
+        g.setColour(lit?juce::Colour(0xff08210e):juce::Colour(0xffe0ebe2));
         g.setFont(Theme::font(13.0f,true));
         g.drawText(getName(),r,juce::Justification::centred);
     }
