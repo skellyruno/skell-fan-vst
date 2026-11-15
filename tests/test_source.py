@@ -145,7 +145,7 @@ class SourceSanity(unittest.TestCase):
         for short in ('"VIB"', '"ROT"', '"TRM"', '"CHO"'):
             self.assertIn(short,editor)
         self.assertIn('const char* notes[]={"S","D","T"}',editor)
-        self.assertIn('place(saturation,648,624,57,70)',editor)
+        self.assertIn('place(saturation,648,622,57,70)',editor)
         self.assertIn('getWidth()/203.0f,getHeight()/64.0f',depth)
         self.assertIn('constexpr float width=203.0f, cy=45.0f',depth)
         self.assertIn('saturation(p,"saturation","",true,true)',editor)
