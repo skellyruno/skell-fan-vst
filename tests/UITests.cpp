@@ -345,8 +345,11 @@ void testEditor(SkellFanAudioProcessor& processor)
             const auto inactiveRotary=snapshot.getPixelAt(325,845);
             check(activeChorus.getGreen()>inactiveRotary.getGreen()+35,
                   "Active CHORUS illuminates clearly above the inactive ROT key");
-            const auto selectedManual=snapshot.getPixelAt(498,769);
-            const auto inactiveHost=snapshot.getPixelAt(535,769);
+            // Sample the painted key faces, not the M/H letter glyphs:
+            // black active-letter pixels and bright inactive-letter pixels
+            // invert a valid selection-contrast comparison.
+            const auto selectedManual=snapshot.getPixelAt(490,765);
+            const auto inactiveHost=snapshot.getPixelAt(527,765);
             check(selectedManual.getGreen()>inactiveHost.getGreen()+18,
                   "Manual clock key is visibly more illuminated than Host");
         }
