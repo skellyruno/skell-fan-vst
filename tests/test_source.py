@@ -241,16 +241,15 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('g.reduceClipRegion(rotorAperture)',fan)
         self.assertIn('borrowing texture from the equivalent LEFT shoulder',fan)
         self.assertLess(fan.index('Blend the original SAT tower'),
-                        fan.index('jagged black/white'),
+                        fan.index("The original photograph's alpha edge"),
                         'Exterior silhouette must be clipped AFTER mirroring')
         self.assertIn('107.0f,114.0f',fan)
         self.assertIn('coverButtonX*coverButtonY',fan)
-        self.assertIn('const float leftEdge=Theme::W-rightEdge',fan)
+        self.assertIn('const float leftEdge=juce::jmap(',fan)
         self.assertIn('constexpr float shell[][3]',fan)
         self.assertIn('leftEdge+12.0f',fan)
         self.assertIn('rightEdge-12.0f',fan)
         self.assertNotIn('const int feather=',fan)
-        self.assertNotIn('skeletonPath',fan)
         self.assertNotIn('skeletonPath',fan)
         self.assertNotIn('ghost(270.0f',fan)
         self.assertIn('The source photograph includes an unrelated saturated arc', fan)
