@@ -271,3 +271,10 @@ Build via Actions > Build BreezeMod. The workflow runs three test suites,
 checks the Windows x64 VST3 binary, and publishes two artifacts:
 BreezeMod-Windows (direct VST3 and exe, no inner ZIP) and
 BreezeMod-UI-Snapshots (real offscreen JUCE editor renderings).
+
+
+## Windows release package integrity
+
+The Windows release candidate is VST3-only. The release workflow normalizes JUCE's trailing-comma `moduleinfo.json` output in the staged bundle (without modifying the compiled module), then strictly validates product/vendor/version identity, both VST3 factory classes and unique 128-bit CIDs. It verifies the module's PE signature, AMD64 machine and PE32+ optional header, rejects unexpected Standalone executables and nested archives, validates the exact staged bundle with pluginval strictness 5, and writes `build-info.json` plus `SHA256SUMS.txt` only after those gates pass.
+
+Artifacts are **preview-only** until FL Studio scan, automation, state save/reopen, existing-project compatibility, real-music A/B, target-hardware CPU/latency, license/attribution and vendor support/contact gates are accepted.
