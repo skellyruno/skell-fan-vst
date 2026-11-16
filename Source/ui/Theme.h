@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <SkellCore/SkullTheme.h>
 namespace Theme
 {
 constexpr float W=956.0f,H=984.0f;
@@ -14,7 +15,7 @@ inline const juce::Colour black{0xff040405},bar{0xff0b0b0c},chrome{0xffacb4bc},
 inline const juce::Rectangle<float> rotorRect{166.0f,85.0f,600.0f,600.0f};
 inline const juce::Rectangle<float> grilleRect{146.0f,65.0f,640.0f,640.0f};
 inline const juce::Rectangle<float> hubRect{371.0f,290.0f,190.0f,190.0f};
-inline const juce::Rectangle<float> plateRect{231.0f,738.0f,490.0f,169.0f};
+inline const juce::Rectangle<float> plateRect{216.0f,733.0f,524.0f,193.0f};
 inline juce::Font font(float pt,bool bold=false)
 {
     return juce::Font(juce::FontOptions(pt).withStyle(bold?"Bold":"Regular"));
@@ -50,6 +51,24 @@ inline juce::Image greenFanArtwork(const juce::Image& source)
     return result;
 }
 
+// Cached UI-only accent conversion; no audio-thread image processing.
+inline juce::Image fanArtworkForSkin(const juce::Image& source,skellcore::ui::SkullSkin skin)
+{
+    auto result=greenFanArtwork(source);
+    if(!result.isValid() || skin==skellcore::ui::SkullSkin::Neon) return result;
+    const auto accent=skellcore::ui::skullPalette(skin).accent;
+    juce::Image::BitmapData pixels(result,juce::Image::BitmapData::readWrite);
+    for(int y=0;y<result.getHeight();++y)
+        for(int x=0;x<result.getWidth();++x)
+        {
+            const auto c=pixels.getPixelColour(x,y);
+            if(c.getFloatAlpha()<0.05f || c.getSaturation()<0.25f
+               || c.getHue()<0.26f || c.getHue()>0.45f) continue;
+            pixels.setPixelColour(x,y,juce::Colour::fromHSV(accent.getHue(),
+                juce::jmin(0.88f,accent.getSaturation()),c.getBrightness(),c.getFloatAlpha()));
+        }
+    return result;
+}
 inline void metal(juce::Graphics& g,juce::Rectangle<float> r)
 {
     juce::ColourGradient gradient(juce::Colour(0xffe0e1e3),r.getTopLeft(),

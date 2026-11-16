@@ -79,6 +79,32 @@ void testProcessing(SkellFanAudioProcessor& processor)
                                   static_cast<int>(savedState.getSize()));
     const float restored=processor.apvts.getRawParameterValue("depth")->load();
     check(std::abs(restored-32.0f)<0.2f,"APVTS state save/load roundtrip");
+
+    // Audio-thread regression: pause must stop the actual LFO, not only its
+    // fan animation. Keep the user's Rate and host-automation parameter intact.
+    setParameter(processor,"syncMode",0.0f);
+    setParameter(processor,"rate",8.0f);
+    processor.setMotionPaused(false);
+    buffer.clear();
+    for (int i=0;i<42;++i) processor.processBlock(buffer,midi);
+    check(processor.displayRate.load(std::memory_order_relaxed)>7.9f,
+          "Manual LFO reaches selected Rate");
+    processor.setMotionPaused(true);
+    for (int i=0;i<42;++i) processor.processBlock(buffer,midi);
+    check(processor.displayRate.load(std::memory_order_relaxed)<0.02f,
+          "Pause stops real audio modulation frequency");
+    check(std::abs(processor.apvts.getRawParameterValue("rate")->load()-8.0f)<0.05f,
+          "Pause does not overwrite automated Rate");
+    juce::MemoryBlock pausedState;
+    processor.getStateInformation(pausedState);
+    processor.setMotionPaused(false);
+    processor.setStateInformation(pausedState.getData(),
+                                 static_cast<int>(pausedState.getSize()));
+    check(processor.isMotionPaused(),"Paused state survives project recall");
+    processor.setMotionPaused(false);
+    for (int i=0;i<42;++i) processor.processBlock(buffer,midi);
+    check(processor.displayRate.load(std::memory_order_relaxed)>7.9f,
+          "Resume restores original Rate");
 }
 
 void testInvalidInputAndSilentTail()
@@ -127,6 +153,8 @@ void testEditor(SkellFanAudioProcessor& processor)
     std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
     check(editor != nullptr,"Editor created");
     if (!editor) return;
+    check(editor->getWidth()==574 && editor->getHeight()==590,
+          "New editor starts at 25-percent smaller default");
 
     // Buttons are actual JUCE children, not a mock layout.
     juce::Button* rotaryButton=nullptr;
@@ -158,8 +186,13 @@ void testEditor(SkellFanAudioProcessor& processor)
         const float depthBefore=processor.apvts.getRawParameterValue("depth")->load();
         const int skinBefore=static_cast<int>(
             processor.apvts.state.getProperty("uiSkullSkin",1));
+        const auto imageBefore=editor->createComponentSnapshot(editor->getLocalBounds(),true);
         skullButton->triggerClick();
         juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+        const auto imageAfter=editor->createComponentSnapshot(editor->getLocalBounds(),true);
+        check(imageBefore.isValid() && imageAfter.isValid()
+              && imageBefore.getPixelAt(150,2)!=imageAfter.getPixelAt(150,2),
+              "Theme button visibly changes rendered top-bar palette");
         check(static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))
               ==(skinBefore+1)%4,"Clicking shared skull cycles accent skin");
         check(processor.apvts.getRawParameterValue("depth")->load()==depthBefore,
@@ -200,8 +233,8 @@ void testEditor(SkellFanAudioProcessor& processor)
         powerButton->triggerClick();
         juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
     }
-    // The motor-animation switch is UI only; it must never bypass or
-    // change the plugin's audio parameters.
+    // The motion switch pauses audio modulation and fan animation,
+    // but never changes Rate automation or audio bypass.
     FanMotionButton* animationSwitch=nullptr;
     for(int i=0;i<editor->getNumChildComponents();++i)
         if(auto* child=dynamic_cast<FanMotionButton*>(editor->getChildComponent(i)))
@@ -212,11 +245,17 @@ void testEditor(SkellFanAudioProcessor& processor)
         const bool initial=static_cast<bool>(
             processor.apvts.state.getProperty("uiFanAnimation",true));
         const float powerBefore=processor.apvts.getRawParameterValue("power")->load();
+        const float rateBefore=processor.apvts.getRawParameterValue("rate")->load();
+        const bool pauseBefore=processor.isMotionPaused();
         animationSwitch->triggerClick();
         juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
         check(static_cast<bool>(processor.apvts.state.getProperty(
                   "uiFanAnimation",true))!=initial,
-              "Animation button changes only the fan's motion");
+              "Motion button changes fan animation state");
+        check(processor.isMotionPaused()!=pauseBefore,
+              "Motion button toggles real DSP modulation pause");
+        check(processor.apvts.getRawParameterValue("rate")->load()==rateBefore,
+              "Motion button does not overwrite Rate automation");
         check(processor.apvts.getRawParameterValue("power")->load()==powerBefore,
               "Animation switch does not modify audio bypass");
         animationSwitch->triggerClick();
@@ -243,6 +282,22 @@ void testEditor(SkellFanAudioProcessor& processor)
                  =="Chorus - Classic",
           "Screenshots restore the actual factory Chorus startup state");
 
+    juce::Slider* integratedSat=nullptr;
+    for(int i=0;i<editor->getNumChildComponents();++i)
+        if(auto* child=dynamic_cast<juce::Slider*>(editor->getChildComponent(i)))
+            if(child->getName()=="SkellFan SAT")
+                integratedSat=child;
+    check(integratedSat!=nullptr,"SAT knob remains interactive");
+    if(integratedSat)
+        check(integratedSat->getTooltip().contains("SATURATION"),
+              "SAT knob tooltip identifies the integrated saturation control");
+    if(integratedSat)
+    {
+        const auto b=integratedSat->getBounds();
+        check(b.getY()>editor->getHeight()*0.75f &&
+              b.getX()>editor->getWidth()*0.50f,
+              "SAT is part of the main hardware deck, not an external tower");
+    }
     const std::array<std::array<int,2>,4> sizes {{{574,590},{765,787},{956,984},{1434,1476}}};
     juce::PNGImageFormat png;
     for(const auto& sz:sizes)
@@ -263,6 +318,51 @@ void testEditor(SkellFanAudioProcessor& processor)
         if(!snapshot.isValid())continue;
         check(snapshot.getPixelAt(sz[0]/2,sz[1]/2).getAlpha()!=0,
               "Fan hub is visible in actual JUCE snapshot");
+        if(sz[0]==956 && sz[1]==984)
+        {
+            // Check *rendered pixels* from the user-reported problem areas.
+            const auto leftSide=snapshot.getPixelAt(198,849);
+            const auto rightSide=snapshot.getPixelAt(739,852);
+            check(leftSide.getGreen()<=leftSide.getRed()+35
+                  && rightSide.getGreen()<=rightSide.getRed()+35,
+                  "Stray green inserts do not protrude beside the console");
+            check(snapshot.getPixelAt(674,649).getAlpha()!=0,
+                  "Fan cavity is rendered behind the former SAT tower");
+            check(snapshot.getPixelAt(185,725).getBrightness()<0.17f
+                  && snapshot.getPixelAt(774,725).getBrightness()<0.17f,
+                  "Antialiased physical casing has no outside white fringe");
+            check(snapshot.getPixelAt(650,711).getBrightness()>0.35f,
+                  "No mirrored duplicate fan-button graphic on right shoulder");
+            check(snapshot.getPixelAt(631,694).getBrightness()>0.62f,
+                  "Original SAT photo remnant is removed from the shoulder");
+            check(snapshot.getPixelAt(765,820).getBrightness()>0.50f,
+                  "Right casing edge uses smooth clean plastic, not pixel noise");
+            check(snapshot.getPixelAt(520,376).getBrightness()<0.45f,
+                  "Only the skull face is visible; the key shaft is clipped");
+            // Sample multiple clean hardware-face pixels ABOVE the engraved
+            // glyphs. At y=845 the new CHORUS symbol crossed the old probe,
+            // making a genuinely selected mode fail a one-pixel comparison.
+            // Compare the physical pad gradient, not a letter or icon.
+            const int litChorusGreen=
+                (snapshot.getPixelAt(420,817).getGreen()
+                +snapshot.getPixelAt(431,817).getGreen()
+                +snapshot.getPixelAt(420,821).getGreen()
+                +snapshot.getPixelAt(431,821).getGreen())/4;
+            const int idleRotGreen=
+                (snapshot.getPixelAt(313,817).getGreen()
+                +snapshot.getPixelAt(325,817).getGreen()
+                +snapshot.getPixelAt(313,821).getGreen()
+                +snapshot.getPixelAt(325,821).getGreen())/4;
+            check(litChorusGreen>idleRotGreen+30,
+                  "Active CHORUS face is distinctly brighter than inactive ROTARY");
+            // Sample the painted key faces, not the M/H letter glyphs:
+            // black active-letter pixels and bright inactive-letter pixels
+            // invert a valid selection-contrast comparison.
+            const auto selectedManual=snapshot.getPixelAt(490,765);
+            const auto inactiveHost=snapshot.getPixelAt(527,765);
+            check(selectedManual.getGreen()>inactiveHost.getGreen()+18,
+                  "Manual clock key is visibly more illuminated than Host");
+        }
         const auto file=juce::File::getCurrentWorkingDirectory().getChildFile(
             "SkellFan-ui-"+juce::String(sz[0])+"x"+juce::String(sz[1])+".png");
         juce::FileOutputStream output(file);

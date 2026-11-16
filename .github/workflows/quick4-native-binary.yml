@@ -1,0 +1,62 @@
+name: Compile native SkellFan Quick4 renderer
+on:
+  push:
+    branches: [fix/skellfan-controls-20261114]
+    paths:
+      - CMakeLists.txt
+      - Source/**
+      - tests/Quick4.cpp
+      - .github/workflows/quick4-native-binary.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quick4-native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quick4-native-binary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native JUCE build dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            cmake ninja-build g++ git pkg-config \
+            libasound2-dev libjack-jackd2-dev libfreetype6-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev \
+            libxinerama-dev libxrandr-dev libxrender-dev \
+            libgtk-3-dev libwebkit2gtk-4.1-dev libglu1-mesa-dev \
+            libcurl4-openssl-dev libfontconfig1-dev libxkbcommon-dev
+      - name: Configure local-only Quick4 target
+        run: |
+          cmake -S . -B build-quick4 -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            "-DCMAKE_CXX_FLAGS_RELEASE=-O0 -DNDEBUG" \
+            "-DCMAKE_C_FLAGS_RELEASE=-O0 -DNDEBUG" \
+            -DSKELLFAN_BUILD_TESTS=OFF \
+            -DSKELLFAN_BUILD_UI_QUICK4=ON
+      - name: Compile actual SkellFanQuick4 executable (NO screenshots on CI)
+        run: cmake --build build-quick4 --target SkellFanQuick4 --parallel 2
+      - name: Package native renderer for local Xvfb execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary="$(find build-quick4 -type f -name SkellFanQuick4 -executable | head -n 1)"
+          if [[ -z "$binary" ]]; then echo 'SkellFanQuick4 binary not found' >&2; exit 1; fi
+          mkdir -p quick4-linux-bin
+          cp "$binary" quick4-linux-bin/SkellFanQuick4
+          chmod +x quick4-linux-bin/SkellFanQuick4
+          ldd "$binary" | tee quick4-linux-bin/dependencies.txt
+          echo "${{ github.sha }}" > quick4-linux-bin/source-commit.txt
+          # This job intentionally NEVER takes screenshots. Run locally with xvfb-run.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SkellFanQuick4-native-linux
+          path: quick4-linux-bin/
+          if-no-files-found: error
+          retention-days: 7

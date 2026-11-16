@@ -3,6 +3,8 @@
 These checks do not substitute for a JUCE build or an audio-host test.
 """
 import re
+import json
+import runpy
 import unittest
 from pathlib import Path
 
@@ -10,6 +12,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SourceSanity(unittest.TestCase):
+    def test_strict_vst3_moduleinfo_packaging(self):
+        workflow=(ROOT / '.github/workflows/build.yml').read_text(encoding='utf-8')
+        self.assertIn('python tests/normalize_moduleinfo.py',workflow)
+        norm=runpy.run_path(str(ROOT/'tests/normalize_moduleinfo.py'))
+        sample='{"Classes":[{"Name":"value,} literal",},],"Factory Info":{"Vendor":"Skell Audio",},}'
+        valid=norm['strip_trailing_commas'](sample)
+        result=json.loads(valid)
+        self.assertEqual(result['Classes'][0]['Name'],'value,} literal')
+        self.assertEqual(result['Factory Info']['Vendor'],'Skell Audio')
+
     def test_required_source_files(self):
         cmake = (ROOT / 'CMakeLists.txt').read_text(encoding='utf-8')
         paths = re.findall(r'\b(?:Source/[\w./-]+\.(?:cpp|h)|Assets/[\w_-]+\.png)\b', cmake)
@@ -86,9 +98,14 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('displayPeak', hdr)
         self.assertIn('outputMeter.refresh()', editor)
         self.assertIn('modeInfo.refresh()', editor)
+        top=(ROOT/'Source/ui/TopBar.cpp').read_text(encoding='utf-8')
+        status=(ROOT/'Source/ui/StatusPanels.cpp').read_text(encoding='utf-8')
+        self.assertIn('const bool compactHeader=getWidth()<700;',top)
+        self.assertIn('compactHeader?17.0f:9.0f',top)
+        self.assertIn('host?"HOST":"MANUAL"',status)
         self.assertIn('StatusPanels.cpp', cmake)
         self.assertIn('smoothingTests()', tests)
-        self.assertRegex(processor, r'setProperty\("uiWidth",765,nullptr\)')
+        self.assertRegex(processor, r'setProperty\("uiWidth",574,nullptr\)')
 
     def test_v15_input_safety_and_sync_plates(self):
         processor = (ROOT / 'Source/PluginProcessor.cpp').read_text(encoding='utf-8')
@@ -98,7 +115,7 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('sanitizeAudioSample', helper)
         self.assertIn('sanitizeAudioSample(wetInput[j])', processor)
         self.assertIn('lastPlateSync != s', editor)
-        self.assertIn('if (hostSync)', editor)
+        self.assertIn('const bool synced=read("syncMode")>0.5f;', editor)
         self.assertIn('inputSafetyTests()', tests)
 
     def test_ui_resize_spacing_and_control_readouts(self):
@@ -121,7 +138,7 @@ class SourceSanity(unittest.TestCase):
                 self.assertGreaterEqual(w * scale_x, 24.0)
                 self.assertLessEqual((xpos + w) * scale_x, win_w)
             for bx, by, bw, bh in ((25,743,116,183),(778,743,155,183),
-                                    (476,907,239,24),(648,661,57,70)):
+                                    (472,903,230,23),(542,797,77,99)):
                 self.assertGreaterEqual(bx*scale_x, 0)
                 self.assertGreaterEqual(by*scale_y, 0)
                 self.assertLessEqual((bx+bw)*scale_x, win_w)
@@ -145,10 +162,24 @@ class SourceSanity(unittest.TestCase):
         for short in ('"VIB"', '"ROT"', '"TRM"', '"CHO"'):
             self.assertIn(short,editor)
         self.assertIn('const char* notes[]={"S","D","T"}',editor)
-        self.assertIn('place(saturation,648,624,57,70)',editor)
+        knob=(ROOT/'Source/ui/ChromeKnob.cpp').read_text(encoding='utf-8')
+        self.assertIn('const bool isSat=parameterId=="saturation"',knob)
+        self.assertIn('area.getBottom()-badgeHeight-1.0f*scale',knob)
+        self.assertIn('juce::Colour(0xff19552b)',knob)
+        self.assertIn('SATURATION - harmonic drive',editor)
+        self.assertIn('place(saturation,542,797,77,99)',editor)
         self.assertIn('getWidth()/203.0f,getHeight()/64.0f',depth)
         self.assertIn('constexpr float width=203.0f, cy=45.0f',depth)
-        self.assertIn('saturation(p,"saturation","",true,true)',editor)
+        self.assertIn('saturation(p,"saturation","SAT",false,true)',editor)
+        keys=(ROOT/'Source/ui/KeyButton.cpp').read_text(encoding='utf-8')
+        self.assertIn('lit?Theme::cyan:juce::Colour(0xff33483a)',keys)
+        self.assertIn('const auto offTop=juce::Colour(0xff77877e)',keys)
+        for mode in ('VIBRATO', 'ROTARY', 'TREMOLO', 'CHORUS'):
+            self.assertIn('mode=="'+mode+'"', keys)
+        self.assertIn('g.strokePath(glyph',keys)
+        fan=(ROOT/'Source/ui/FanView.cpp').read_text(encoding='utf-8')
+        self.assertIn('const int fringeTop=',fan)
+        self.assertNotIn('tint.interpolatedWith(juce::Colours::white,.45f)',keys)
         self.assertIn('"DRY/WET"',top)
 
     def test_skellcore_dependency_identity_and_compatibility(self):
@@ -181,7 +212,7 @@ class SourceSanity(unittest.TestCase):
         lfo=(ROOT / 'Source/dsp/Lfo.h').read_text(encoding='utf-8')
         dsp=(ROOT / 'tests/DSPTests.cpp').read_text(encoding='utf-8')
         self.assertIn('place(skull,7,6,53,47)',top)
-        self.assertIn('place(power,905,9,43,42)',top)
+        self.assertIn('place(power,909,12,35,35)',top)
         self.assertIn('place(presets,215,10,408,38)',editor)
         self.assertIn('SkellFan fan-skull',top_h)
         self.assertIn('drawSkullKeyMark',top)
@@ -190,7 +221,7 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('brand.append("SKELL"',editor)
         self.assertIn('brand.append("FAN"',editor)
         self.assertIn('const juce::Rectangle<float> badge',editor)
-        self.assertIn('greenFanArtwork',fan)
+        self.assertIn('fanArtworkForSkin(rawBody,skin)',fan)
         self.assertIn('greenFanArtwork',theme)
         self.assertIn('smoothDivisionChange',lfo)
         self.assertIn('testHostDivisionChangeGlide()',dsp)
@@ -215,7 +246,7 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('g.drawText("-24",4,83,26,12',status)
         self.assertIn('g.drawText("-54",4,139,26,12',status)
         self.assertIn('"SAT " + juce::String(saturation)',status)
-        self.assertIn('Fine, fixed concentric lathe details',fan)
+        self.assertIn('Shared SkellCore skull face',fan)
         self.assertIn('const float output=breeze::dsp::sanitizeAudioSample(',processor)
         self.assertIn('testInvalidInputAndSilentTail()',integration)
         self.assertIn('FanMotionButton',integration)
@@ -237,21 +268,64 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('mouseWheelMove', header)
         self.assertIn('keyPressed', header)
         self.assertNotIn('Permanent top-bar Width/Mix percentage', knob)
-        self.assertIn('skeletonPath.addEllipse', fan)
-        self.assertIn('g.strokePath(skeletonPath', fan)
-        self.assertIn('ghost(270.0f', fan)
-        self.assertIn('ghost(660.0f', fan)
-        self.assertIn('ghost(469.0f', fan)
-        self.assertIn('.rotated(static_cast<float>(angle))', fan)
-        self.assertIn('g.reduceClipRegion(foregroundMask)', fan)
+        self.assertIn('skellcore::ui::drawSkullKeyMark',fan)
+        self.assertIn('g.reduceClipRegion(rotorAperture)',fan)
+        self.assertIn('borrowing texture from the equivalent LEFT shoulder',fan)
+        self.assertLess(fan.index('Blend the original SAT tower'),
+                        fan.index("The original photograph's alpha edge"),
+                        'Exterior silhouette must be clipped AFTER mirroring')
+        self.assertIn('107.0f,114.0f',fan)
+        self.assertIn('coverButtonX*coverButtonY',fan)
+        self.assertIn('const float leftEdge=juce::jmap(',fan)
+        self.assertIn('constexpr float shell[][3]',fan)
+        self.assertIn('leftEdge+12.0f',fan)
+        self.assertIn('Theme::W-rightEdge+23.0f',fan)
+        self.assertIn('rightEdge-26.0f',fan)
+        self.assertIn('(dist-12.0f)/12.0f',fan)
+        self.assertNotIn('palette.background.withAlpha(0.94f)',
+            (ROOT/'Source/ui/LookAndFeel.cpp').read_text(encoding='utf-8'))
+        look=(ROOT/'Source/ui/LookAndFeel.cpp').read_text(encoding='utf-8')
+        self.assertIn('drawCornerResizer',look)
+        self.assertNotIn('const int feather=',fan)
+        self.assertNotIn('skeletonPath',fan)
+        self.assertNotIn('ghost(270.0f',fan)
         self.assertIn('The source photograph includes an unrelated saturated arc', fan)
-        self.assertIn('c.getSaturation()>0.08f', fan)
+        self.assertIn('if (sat<0.045f || hue<0.20f || hue>0.78f) continue;',fan)
+        self.assertIn('const float sat=c.getSaturation();',fan)
+        self.assertNotIn('c.getSaturation()>0.08f',fan)
         self.assertIn('0.0f,0.0f,metalValue', fan)
         self.assertIn('juce::Colour::fromHSV(', fan)
         self.assertIn('if (body.isValid())', fan)
         self.assertNotIn('if(hub.isValid())', fan)
-        self.assertIn('juce::Path skeletonPath,foregroundMask', fan_h)
+        self.assertNotIn('pedestalRepairPath', fan_h)
         self.assertIn('const double target=(enabled&&powerOn)', fan)
+
+    def test_pause_motion_and_compact_default(self):
+        proc=(ROOT/'Source/PluginProcessor.cpp').read_text(encoding='utf-8')
+        editor=(ROOT/'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        self.assertIn('lfo.setFrequency(paused?0.0:hz',proc)
+        self.assertIn('if(hostSync && !paused && transportPlaying && validPPQ)',proc)
+        self.assertIn('processor.setMotionPaused(paused)',editor)
+        self.assertIn('PAUSED | RATE SAVED',editor)
+        self.assertIn('SkellFan SAT',editor)
+        fan=(ROOT/'Source/ui/FanView.cpp').read_text(encoding='utf-8')
+        self.assertIn('correctSide(177,247,713,927)',fan)
+        self.assertIn('correctSide(704,774,713,927)',fan)
+        self.assertNotIn('satHousing',editor)
+        self.assertIn('setProperty("uiWidth",574,nullptr)',proc)
+
+    def test_live_theme_and_custom_preset_menus(self):
+        editor=(ROOT/'Source/PluginEditor.cpp').read_text(encoding='utf-8')
+        preset=(ROOT/'Source/ui/PresetBar.cpp').read_text(encoding='utf-8')
+        fan=(ROOT/'Source/ui/FanView.cpp').read_text(encoding='utf-8')
+        look=(ROOT/'Source/ui/LookAndFeel.cpp').read_text(encoding='utf-8')
+        self.assertIn('top.onThemeChanged=[this]{applyTheme();}',editor)
+        self.assertIn('fan.setSkin(skin)',editor)
+        self.assertIn('fanArtworkForSkin(rawBody,skin)',fan)
+        self.assertIn('class FanPresetDialog final',preset)
+        self.assertIn('menu.setLookAndFeel(&getLookAndFeel())',preset)
+        self.assertIn('remove.setEnabled(saved.existsAsFile())',preset)
+        self.assertIn('juce::AlertWindow::backgroundColourId',look)
 
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')

@@ -7,13 +7,14 @@ void PowerToggle::paintButton(juce::Graphics& g,bool hover,bool down)
     auto r=getLocalBounds().toFloat().reduced(1.5f);
     g.setColour(juce::Colour(0xff191a1c).brighter(hover?0.12f:0.0f));
     g.fillRoundedRectangle(r,5.0f);
-    const float cx=r.getCentreX(),cy=r.getCentreY(),radius=11.5f;
+    const float cx=r.getCentreX(),cy=r.getCentreY();
+    const float radius=juce::jmin(r.getWidth(),r.getHeight())*0.24f;
     juce::Path powerSymbol;
     powerSymbol.addCentredArc(cx,cy+1.0f,radius,radius,0,
         juce::MathConstants<float>::pi*.27f,juce::MathConstants<float>::pi*1.73f,true);
     g.setColour(getToggleState()?Theme::cyan:juce::Colour(0xffb8b9bd));
     g.strokePath(powerSymbol,juce::PathStrokeType(2.9f));
-    g.drawLine(cx,cy-13,cx,cy+1,2.9f);
+    g.drawLine(cx,cy-radius-1.0f,cx,cy+0.2f,2.4f);
     if(down){g.setColour(juce::Colours::white.withAlpha(.06f));g.fillRoundedRectangle(r,5);}
 }
 void ScopeToggle::paintButton(juce::Graphics& g,bool hover,bool down)
@@ -111,12 +112,15 @@ TopBar::TopBar(SkellFanAudioProcessor& p)
     skin=skellcore::ui::skinFromIndex(
         static_cast<int>(p.apvts.state.getProperty("uiSkullSkin",1)));
     skull.setSkin(skin);
+    skull.setTooltip("Change theme: "+juce::String(skellcore::ui::skinName(skin)));
     skull.onClick=[this]
     {
         skin=skellcore::ui::nextSkin(skin);
         processor.apvts.state.setProperty("uiSkullSkin",
                                           static_cast<int>(skin),nullptr);
         skull.setSkin(skin);
+        skull.setTooltip("Change theme: "+juce::String(skellcore::ui::skinName(skin)));
+        if(onThemeChanged)onThemeChanged();
         repaint();
     };
     addAndMakeVisible(skull);
@@ -129,12 +133,18 @@ void TopBar::refreshSkin()
     if (updated==skin) return;
     skin=updated;
     skull.setSkin(skin);
+    skull.setTooltip("Change theme: "+juce::String(skellcore::ui::skinName(skin)));
+    if(onThemeChanged)onThemeChanged();
     repaint();
 }
 void TopBar::paint(juce::Graphics& g)
 {
     const auto palette=skellcore::ui::skullPalette(skin);
-    g.fillAll(juce::Colour(0xff080a08));
+    g.fillAll(palette.background);
+    // At the minimum 574px width the second-line tagline renders at ~5px
+    // and is visual noise. Centre the readable title instead; other sizes
+    // preserve the full original branded two-line header.
+    const bool compactHeader=getWidth()<700;
     g.addTransform(juce::AffineTransform::scale(getWidth()/956.0f,getHeight()/60.0f));
     g.setColour(palette.line);g.fillRect(0,59,956,1);
 
@@ -143,10 +153,13 @@ void TopBar::paint(juce::Graphics& g)
     title.setJustification(juce::Justification::centredLeft);
     title.append("SKELL",Theme::font(17.0f,true),palette.bone);
     title.append("FAN",Theme::font(17.0f,true),palette.accent);
-    title.draw(g,juce::Rectangle<float>{109.0f,9.0f,106.0f,26.0f});
-    g.setColour(palette.boneDim);
-    g.setFont(Theme::font(9.0f,true));
-    g.drawText("FAN MOD FX",110,35,96,13,juce::Justification::centredLeft);
+    title.draw(g,juce::Rectangle<float>{109.0f,compactHeader?17.0f:9.0f,106.0f,26.0f});
+    if(!compactHeader)
+    {
+        g.setColour(palette.boneDim);
+        g.setFont(Theme::font(9.0f,true));
+        g.drawText("FAN MOD FX",110,35,96,13,juce::Justification::centredLeft);
+    }
     g.setColour(palette.line);
     g.drawVerticalLine(208,10.0f,49.0f);
     g.drawVerticalLine(895,10.0f,49.0f);
@@ -166,5 +179,5 @@ void TopBar::resized()
     place(scope,66,9,36,42);
     place(width,688,1,47,58);
     place(mix,813,1,51,58);
-    place(power,905,9,43,42);
+    place(power,909,12,35,35);
 }

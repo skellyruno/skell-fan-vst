@@ -4,7 +4,22 @@
 FanView::FanView(SkellFanAudioProcessor& p):processor(p)
 {
     setInterceptsMouseClicks(false,false);
-    body=Theme::greenFanArtwork(Theme::image(BinaryData::fan_body_png,BinaryData::fan_body_pngSize));
+    rawBody=Theme::image(BinaryData::fan_body_png,BinaryData::fan_body_pngSize);
+    rawRotor=Theme::image(BinaryData::blades_png,BinaryData::blades_pngSize);
+    rawBlur=Theme::image(BinaryData::blades_blur_png,BinaryData::blades_blur_pngSize);
+    grille=Theme::image(BinaryData::grille_png,BinaryData::grille_pngSize);
+    setSkin(skellcore::ui::skinFromIndex(
+        static_cast<int>(processor.apvts.state.getProperty("uiSkullSkin",1))));
+    // Source-photo repairs are cached once per skin, never in paint().
+    lastTime=juce::Time::getMillisecondCounterHiRes();
+    startTimerHz(60);
+}
+void FanView::setSkin(skellcore::ui::SkullSkin skin)
+{
+    const int index=static_cast<int>(skin);
+    if(index==skinIndex) return;
+    skinIndex=index;
+    body=Theme::fanArtworkForSkin(rawBody,skin);
     // The source photograph includes an unrelated saturated arc at the foot
     // of the guard. It used to read as a detached fourth green blade.
     // Convert ONLY that static lower accent to brushed dark metal; keep the
@@ -21,65 +36,218 @@ FanView::FanView(SkellFanAudioProcessor& p):processor(p)
             {
                 const auto c=pixels.getPixelColour(x,y);
                 if (c.getFloatAlpha()<0.08f) continue;
-                // Fully neutralize every static under-guard pixel. The
-                // previous hue gate left green low-saturation antialiasing
-                // specks and made the arc appear dusty in HiDPI snapshots.
-                const float metalValue=c.getSaturation()>0.08f
-                    ? juce::jlimit(0.16f,0.67f,c.getBrightness()*0.68f)
-                    : c.getBrightness();
+                // The earlier blanket grayscale repaint altered even the
+                // original neutral white plastic from (196,195,200) to
+                // (200,200,200) inside one hard rectangle. Preserve all
+                // low-chroma background pixels. Recolor only the actual
+                // green/cyan static arc and its tinted antialiasing.
+                const float sat=c.getSaturation();
+                const float hue=c.getHue();
+                if (sat<0.045f || hue<0.20f || hue>0.78f) continue;
+                const float metalValue=juce::jlimit(0.16f,0.77f,
+                                                   c.getBrightness()*0.75f);
                 pixels.setPixelColour(x,y,juce::Colour::fromHSV(
                     0.0f,0.0f,metalValue,c.getFloatAlpha()));
             }
     }
-    rotor=Theme::greenFanArtwork(Theme::image(BinaryData::blades_png,BinaryData::blades_pngSize));
-    blur=Theme::greenFanArtwork(Theme::image(BinaryData::blades_blur_png,BinaryData::blades_blur_pngSize));
-    grille=Theme::image(BinaryData::grille_png,BinaryData::grille_pngSize);
-    // Build one compact skeletal path: no SVG decoding or path allocation at 60 Hz.
-    // Skull, jaw, collar bones, rib cage, pelvis and limb segments share one vector.
-    skeletonPath.addEllipse(-8.0f,-33.0f,16.0f,17.0f);
-    skeletonPath.addEllipse(-5.0f,-26.2f,3.2f,3.0f);
-    skeletonPath.addEllipse( 1.8f,-26.2f,3.2f,3.0f);
-    skeletonPath.startNewSubPath(-4.2f,-16.0f);
-    skeletonPath.lineTo(-3.0f,-12.0f);
-    skeletonPath.lineTo( 3.0f,-12.0f);
-    skeletonPath.lineTo( 4.2f,-16.0f);
-    skeletonPath.startNewSubPath(0.0f,-12.0f);
-    skeletonPath.lineTo(0.0f,20.0f); // spine
-    skeletonPath.startNewSubPath(-16.0f,-8.0f);
-    skeletonPath.lineTo(16.0f,-8.0f); // shoulders
-    for (int rib=0;rib<3;++rib)
+
+    // The two neon side inserts beside the lower control deck are baked
+    // into the still photograph, not part of the real moving rotor.
+    // Remove their hue only; preserve the source alpha and subtle shading.
+    // This runs once per UI theme switch, never in the DSP or paint loop.
+    if(body.isValid())
     {
-        const float y=-4.0f+rib*6.5f;
-        skeletonPath.startNewSubPath(-14.0f+rib*1.8f,y);
-        skeletonPath.quadraticTo(0.0f,y+7.0f,14.0f-rib*1.8f,y);
+        juce::Image::BitmapData pixels(body,juce::Image::BitmapData::readWrite);
+        const float sx=static_cast<float>(body.getWidth())/Theme::W;
+        const float sy=static_cast<float>(body.getHeight())/Theme::H;
+        const auto correctSide=[&](int x0,int x1,int y0,int y1)
+        {
+            const int left=juce::jlimit(0,body.getWidth(),juce::roundToInt(x0*sx));
+            const int right=juce::jlimit(0,body.getWidth(),juce::roundToInt(x1*sx));
+            const int top=juce::jlimit(0,body.getHeight(),juce::roundToInt(y0*sy));
+            const int bottom=juce::jlimit(0,body.getHeight(),juce::roundToInt(y1*sy));
+            for(int y=top;y<bottom;++y)
+                for(int x=left;x<right;++x)
+                {
+                    const auto c=pixels.getPixelColour(x,y);
+                    if(c.getFloatAlpha()<0.07f || c.getSaturation()<0.22f
+                       || c.getHue()<0.20f || c.getHue()>0.49f) continue;
+                    const float value=juce::jlimit(0.64f,0.84f,
+                        0.65f+c.getBrightness()*0.22f);
+                    pixels.setPixelColour(x,y,juce::Colour::fromHSV(
+                        0.55f,0.028f,value,c.getFloatAlpha()));
+                }
+        };
+        correctSide(177,247,713,927);
+        correctSide(704,774,713,927);
+
+        // Blend the original SAT tower out of the photographed casing by
+        // borrowing texture from the equivalent LEFT shoulder. The fan body
+        // is approximately symmetric, unlike the detached SAT module.
+        // Feather all four sides, preserve authentic lighting/noise, and
+        // never fill the region with a flat white geometric blob.
+        // Executed once per theme change on the message thread.
+        const int x0=juce::jlimit(0,body.getWidth(),juce::roundToInt(619.0f*sx));
+        const int x1=juce::jlimit(0,body.getWidth(),juce::roundToInt(763.0f*sx));
+        const int y0=juce::jlimit(0,body.getHeight(),juce::roundToInt(599.0f*sy));
+        const int y1=juce::jlimit(0,body.getHeight(),juce::roundToInt(751.0f*sy));
+        for(int y=y0;y<y1;++y)
+            for(int x=x0;x<x1;++x)
+            {
+                const int mirrorX=body.getWidth()-1-x;
+                if(mirrorX<0 || mirrorX>=body.getWidth()) continue;
+                const auto original=pixels.getPixelColour(x,y);
+                // Mirroring x=284..322 at y=700..734 would clone the baked
+                // left-hand motion-button graphic onto the right shoulder.
+                // Source the same white plastic a little further inboard
+                // in that small area and feather to the symmetric texture.
+                const float lx=static_cast<float>(x)/sx;
+                const float ly=static_cast<float>(y)/sy;
+                const float coverButtonX=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(lx-622.0f)/10.0f),
+                    juce::jlimit(0.0f,1.0f,(688.0f-lx)/10.0f));
+                const float coverButtonY=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(ly-688.0f)/10.0f),
+                    juce::jlimit(0.0f,1.0f,(748.0f-ly)/12.0f));
+                const int cleanX=juce::jlimit(0,body.getWidth()-1,
+                    mirrorX+juce::roundToInt(70.0f*sx));
+                const auto donor=pixels.getPixelColour(mirrorX,y)
+                    .interpolatedWith(pixels.getPixelColour(cleanX,y),
+                                      coverButtonX*coverButtonY);
+                const float fx=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(x-x0)/(12.0f*sx)),
+                    juce::jlimit(0.0f,1.0f,(x1-x-1)/(13.0f*sx)));
+                const float fy=juce::jmin(
+                    juce::jlimit(0.0f,1.0f,(y-y0)/(12.0f*sy)),
+                    juce::jlimit(0.0f,1.0f,(y1-y-1)/(17.0f*sy)));
+                const float weight=fx*fy;
+                if(weight>0.0f)
+                    pixels.setPixelColour(x,y,original.interpolatedWith(donor,weight));
+            }
+        // Repair the tiny photographed SAT marker remnant on the upper
+        // shoulder using clean plastic from the same vertical texture.
+        // This touches only 619..662 by 686..703 of the body, never audio.
+        const int cleanRow=juce::jlimit(0,body.getHeight()-1,
+                                       juce::roundToInt(681.0f*sy));
+        for(int y=juce::jmax(0,juce::roundToInt(686.0f*sy));
+                y<juce::jmin(body.getHeight(),juce::roundToInt(703.0f*sy));++y)
+            for(int x=juce::jmax(0,juce::roundToInt(619.0f*sx));
+                    x<juce::jmin(body.getWidth(),juce::roundToInt(662.0f*sx));++x)
+            {
+                const float lx=static_cast<float>(x)/sx;
+                const float ly=static_cast<float>(y)/sy;
+                const float weight=juce::jmin(
+                     juce::jlimit(0.0f,1.0f,(lx-619.0f)/6.0f),
+                     juce::jlimit(0.0f,1.0f,(662.0f-lx)/6.0f))
+                   *juce::jmin(
+                     juce::jlimit(0.0f,1.0f,(ly-686.0f)/4.0f),
+                     juce::jlimit(0.0f,1.0f,(703.0f-ly)/4.0f));
+                const auto c=pixels.getPixelColour(x,y);
+                pixels.setPixelColour(x,y,c.interpolatedWith(
+                       pixels.getPixelColour(x,cleanRow),weight));
+            }
+
+        // The left foot has a fine cyan/blue scratch from the original photo.
+        // Sample intact adjacent plastic above/below the blue pixels, rather
+        // than drawing another bright line or covering the green control rim.
+        // This cached static-image correction never touches the animated fan.
+        const int fringeTop=juce::jmax(0,juce::roundToInt(800.0f*sy));
+        const int fringeBottom=juce::jmin(body.getHeight(),juce::roundToInt(915.0f*sy));
+        for(int y=fringeTop;y<fringeBottom;++y)
+            for(int x=juce::jmax(0,juce::roundToInt(178.0f*sx));
+                    x<juce::jmin(body.getWidth(),juce::roundToInt(206.0f*sx));++x)
+            {
+                const auto c=pixels.getPixelColour(x,y);
+                if(c.getFloatAlpha()<0.18f || c.getSaturation()<0.06f ||
+                   c.getBlue()<=c.getRed()+12 ||
+                   c.getBlue()<=c.getGreen()+5) continue;
+                const int sampleY=juce::jmin(body.getHeight()-1,
+                                            y+juce::jmax(1,juce::roundToInt(15.0f*sy)));
+                const auto clean=pixels.getPixelColour(x,sampleY);
+                const auto neutral=juce::Colour::fromHSV(0.0f,0.015f,
+                                      c.getBrightness(),c.getFloatAlpha());
+                const auto replacement=(clean.getFloatAlpha()>0.8f &&
+                    clean.getBlue()<=clean.getRed()+9)
+                    ?neutral.interpolatedWith(clean.withAlpha(c.getFloatAlpha()),0.65f)
+                    :neutral;
+                pixels.setPixelColour(x,y,replacement);
+            }
+
+        // The original photograph's alpha edge has loose white and black
+        // speckles on BOTH shoulders, especially below y=853. Color/hue
+        // neutralization cannot repair those alpha holes. Trace a smooth
+        // casing silhouette through the original white plastic edge, then
+        // reconstruct an antialiased border from intact inside pixels.
+        // Replaces the old brittle, row-limited rectangular cutout.
+        constexpr float shell[][3]={
+            {710.0f,204.0f,751.0f},{750.0f,190.0f,759.0f},
+            {800.0f,178.0f,767.0f},{850.0f,167.0f,773.0f},
+            {900.0f,153.0f,780.0f},{930.0f,158.0f,780.0f},
+            {950.0f,173.0f,767.0f},{970.0f,205.0f,737.0f},
+            {979.0f,239.0f,717.0f}
+        };
+        for(int y=juce::jmax(0,juce::roundToInt(shell[0][0]*sy));
+                y<juce::jmin(body.getHeight(),juce::roundToInt(979.0f*sy));++y)
+        {
+            const float fy=static_cast<float>(y)/sy;
+            int segment=0;
+            while(segment<7 && fy>shell[segment+1][0])++segment;
+            const float alpha=juce::jlimit(0.0f,1.0f,
+                (fy-shell[segment][0])/(shell[segment+1][0]-shell[segment][0]));
+            const float leftEdge=juce::jmap(alpha,shell[segment][1],shell[segment+1][1]);
+            const float rightEdge=juce::jmap(alpha,shell[segment][2],shell[segment+1][2]);
+            const int leftDonor=juce::jlimit(0,body.getWidth()-1,
+                juce::roundToInt((leftEdge+12.0f)*sx));
+            // Sample the intact symmetric LEFT shell: the photographed
+            // right-hand donor was itself contaminated with bright specks.
+            const int rightDonor=juce::jlimit(0,body.getWidth()-1,
+                juce::roundToInt((Theme::W-rightEdge+23.0f)*sx));
+            const auto cleanLeft=pixels.getPixelColour(leftDonor,y);
+            const auto cleanRight=pixels.getPixelColour(rightDonor,y);
+            const int leftEnd=juce::jlimit(0,body.getWidth(),
+                juce::roundToInt((leftEdge+15.0f)*sx));
+            const int rightStart=juce::jlimit(0,body.getWidth(),
+                juce::roundToInt((rightEdge-26.0f)*sx));
+            for(int x=juce::jmax(0,juce::roundToInt(125.0f*sx));x<leftEnd;++x)
+            {
+                const float dist=static_cast<float>(x)/sx-leftEdge;
+                const float coverage=juce::jlimit(0.0f,1.0f,(dist+0.75f)/2.5f);
+                const float keep=juce::jlimit(0.0f,1.0f,(dist-1.0f)/14.0f);
+                auto smooth=cleanLeft.interpolatedWith(
+                    pixels.getPixelColour(x,y),keep);
+                // Neutralize the faint cyan halo on the photograph's white
+                // shell while preserving its original alpha/shading.
+                if(dist>=0.0f && dist<19.0f && smooth.getSaturation()>0.065f
+                   && smooth.getHue()>0.43f && smooth.getHue()<0.64f)
+                    smooth=juce::Colour::fromHSV(0.0f,0.015f,
+                        smooth.getBrightness(),smooth.getFloatAlpha());
+                pixels.setPixelColour(x,y,smooth.withAlpha(
+                    smooth.getFloatAlpha()*coverage));
+            }
+            for(int x=rightStart;x<juce::jmin(body.getWidth(),
+                      juce::roundToInt(835.0f*sx));++x)
+            {
+                const float dist=rightEdge-static_cast<float>(x)/sx;
+                const float coverage=juce::jlimit(0.0f,1.0f,(dist+0.75f)/2.5f);
+                // Reconstruct the noisy outer 12px entirely from the
+                // intact opposite shoulder; blend back into the original
+                // plastic only inside the shell. This hides the white scuff
+                // that alpha trimming / hue corrections alone left behind.
+                const float keep=juce::jlimit(0.0f,1.0f,(dist-12.0f)/12.0f);
+                auto smooth=cleanRight.interpolatedWith(
+                    pixels.getPixelColour(x,y),keep);
+                if(dist>=0.0f && dist<19.0f && smooth.getSaturation()>0.065f
+                   && smooth.getHue()>0.43f && smooth.getHue()<0.64f)
+                    smooth=juce::Colour::fromHSV(0.0f,0.015f,
+                        smooth.getBrightness(),smooth.getFloatAlpha());
+                pixels.setPixelColour(x,y,smooth.withAlpha(
+                    smooth.getFloatAlpha()*coverage));
+            }
+        }
     }
-    skeletonPath.startNewSubPath(-10.0f,18.0f);
-    skeletonPath.lineTo(0.0f,24.0f);
-    skeletonPath.lineTo(10.0f,18.0f);
-    skeletonPath.startNewSubPath(-16.0f,-8.0f);
-    skeletonPath.lineTo(-23.0f,6.0f);
-    skeletonPath.lineTo(-19.0f,22.0f);
-    skeletonPath.startNewSubPath(16.0f,-8.0f);
-    skeletonPath.lineTo(23.0f,6.0f);
-    skeletonPath.lineTo(19.0f,22.0f);
-    skeletonPath.startNewSubPath(-8.0f,21.0f);
-    skeletonPath.lineTo(-11.0f,37.0f);
-    skeletonPath.lineTo(-9.0f,49.0f);
-    skeletonPath.startNewSubPath(8.0f,21.0f);
-    skeletonPath.lineTo(11.0f,37.0f);
-    skeletonPath.lineTo(9.0f,49.0f);
-    foregroundMask.startNewSubPath(274.0f,610.0f);
-    foregroundMask.lineTo(683.0f,610.0f);
-    foregroundMask.quadraticTo(727.0f,629.0f,745.0f,687.0f);
-    foregroundMask.lineTo(788.0f,901.0f);
-    foregroundMask.lineTo(797.0f,984.0f);
-    foregroundMask.lineTo(160.0f,984.0f);
-    foregroundMask.lineTo(166.0f,899.0f);
-    foregroundMask.lineTo(211.0f,687.0f);
-    foregroundMask.quadraticTo(232.0f,629.0f,274.0f,610.0f);
-    foregroundMask.closeSubPath();
-    lastTime=juce::Time::getMillisecondCounterHiRes();
-    startTimerHz(60);
+    rotor=Theme::fanArtworkForSkin(rawRotor,skin);
+    blur=Theme::fanArtworkForSkin(rawBlur,skin);
+    repaint();
 }
 void FanView::setAnimationEnabled(bool b)
 {
@@ -125,25 +293,20 @@ void FanView::paint(juce::Graphics& g)
     if(body.isValid())
         g.drawImage(body,juce::Rectangle<float>{0.0f,0.0f,Theme::W,Theme::H},
                     juce::RectanglePlacement::stretchToFit);
-    // The casing is behind the fan, while shadowy figures live further
-    // behind the blades. Their sway and orbit derive from the same angle;
-    // stopping animation or bypassing the effect freezes every figure.
+    // A clean cavity replaces the photographed black/grey patches.
+    const auto bladeWindow=Theme::rotorRect.reduced(1.0f);
+    juce::ColourGradient cavity(juce::Colour(0xff101b15),469.0f,100.0f,
+                                juce::Colour(0xff040807),469.0f,690.0f,false);
+    cavity.addColour(0.5,juce::Colour(0xff070e0b));
+    g.setGradientFill(cavity);
+    g.fillEllipse(bladeWindow);
+    // A round rotor aperture, not the old straight pedestal mask, ensures
+    // three complete blades remain visible at every animation angle.
+    juce::Path rotorAperture;
+    rotorAperture.addEllipse(bladeWindow);
     {
-        const auto ghost=[&](float x,float y,float scale,float phase,float opacity)
-        {
-            juce::Graphics::ScopedSaveState saved(g);
-            const float sway=static_cast<float>(std::sin(angle*0.7+phase))*5.0f;
-            g.addTransform(juce::AffineTransform::scale(scale)
-                .rotated(static_cast<float>(std::sin(angle*0.5+phase))*0.14f)
-                .translated(x+sway,y));
-            g.setColour(juce::Colour(0xff80e899).withAlpha(opacity));
-            g.strokePath(skeletonPath,juce::PathStrokeType(2.3f));
-        };
-        ghost(270.0f,355.0f,1.45f,0.0f,0.14f);
-        ghost(660.0f,342.0f,1.36f,2.1f,0.13f);
-        ghost(469.0f,547.0f,1.25f,4.2f,0.11f);
-    }
-
+        juce::Graphics::ScopedSaveState rotorClip(g);
+        g.reduceClipRegion(rotorAperture);
     auto rotorRect=Theme::rotorRect;
     const auto drawBlade=[&](const juce::Image& im,float opacity,double a)
     {
@@ -163,18 +326,8 @@ void FanView::paint(juce::Graphics& g)
             drawBlade(rotor,0.13f+(4-k)*0.035f,angle-k*speed*0.038);
         if(speed>2.5)drawBlade(blur,static_cast<float>(juce::jlimit(0.0,0.7,(speed-2.5)*1.4)),angle);
     }
-    g.setOpacity(1.0f);
-
-    // Front pedestal occludes the physically impossible lower blade spill.
-    // Repaint only the foreground casing from the existing source artwork
-    // before the front grille: no extra PNG and no detached neon patch.
-    if (body.isValid())
-    {
-        juce::Graphics::ScopedSaveState saved(g);
-        g.reduceClipRegion(foregroundMask);
-        g.drawImage(body,juce::Rectangle<float>{0.0f,0.0f,Theme::W,Theme::H},
-                    juce::RectanglePlacement::stretchToFit);
     }
+    g.setOpacity(1.0f);
 
     // Premium mechanical bearing: replace the flat concentric green PNG
     // with steel bevels, recessed black inner barrel and an engraved skeleton.
@@ -197,21 +350,20 @@ void FanView::paint(juce::Graphics& g)
                                juce::Colour(0xff060d08),center.x+61.0f,center.y+68.0f,false);
     g.setGradientFill(inset);
     g.fillEllipse(center.x-69.0f,center.y-69.0f,138.0f,138.0f);
-    // Fine, fixed concentric lathe details: they remain stationary
-    // while the skeletal mascot and blade assembly rotate together.
-    g.setColour(juce::Colour(0xffeffff1).withAlpha(0.38f));
-    g.drawEllipse(center.x-88.0f,center.y-88.0f,176.0f,176.0f,1.2f);
-    g.setColour(juce::Colour(0xff07140b).withAlpha(0.6f));
-    g.drawEllipse(center.x-74.0f,center.y-74.0f,148.0f,148.0f,1.5f);
+    // Shared SkellCore skull face, no full-body skeleton in the bearing.
+    g.setColour(juce::Colour(0xffe4f5e7).withAlpha(0.25f));
+    g.drawEllipse(center.x-58.0f,center.y-58.0f,116.0f,116.0f,1.0f);
     {
-        juce::Graphics::ScopedSaveState saved(g);
-        g.addTransform(juce::AffineTransform::scale(1.35f)
-                        .rotated(static_cast<float>(angle))
-                        .translated(center.x,center.y-9.0f));
-        g.setColour(juce::Colour(0xff07160c));
-        g.strokePath(skeletonPath,juce::PathStrokeType(5.5f));
-        g.setColour(juce::Colour(0xffd7f1dc));
-        g.strokePath(skeletonPath,juce::PathStrokeType(3.3f));
+        juce::Path skullClip;
+        skullClip.addEllipse(center.x-57.0f,center.y-57.0f,107.0f,114.0f);
+        juce::Graphics::ScopedSaveState skullSafe(g);
+        g.reduceClipRegion(skullClip);
+        constexpr float skullScale=4.0f;
+        g.addTransform(juce::AffineTransform::scale(skullScale).translated(
+             center.x-13.5f*skullScale,center.y-13.5f*skullScale));
+        const auto skin=skellcore::ui::skinFromIndex(skinIndex);
+        const auto palette=skellcore::ui::skullPalette(skin);
+        skellcore::ui::drawSkullKeyMark(g,0.0f,0.0f,palette.bone,palette.panelHi);
     }
     const auto c=Theme::grilleRect;
     if(grille.isValid())

@@ -104,3 +104,21 @@ if(SKELLFAN_BUILD_TESTS)
     target_compile_features(SkellFanPortableTests PRIVATE cxx_std_17)
     add_test(NAME SkellFanPortableTests COMMAND SkellFanPortableTests)
 endif()
+
+# Local-only real JUCE editor capture. Four scenes by default; not shipped as
+# a plugin, and not a replacement for independent Windows VST3/DSP tests.
+option(SKELLFAN_BUILD_UI_QUICK4 "Build actual SkellFan local Quick4 renderer" OFF)
+if(SKELLFAN_BUILD_UI_QUICK4)
+    juce_add_console_app(SkellFanQuick4 PRODUCT_NAME "SkellFan Quick4 UI")
+    juce_generate_juce_header(SkellFanQuick4)
+    target_sources(SkellFanQuick4 PRIVATE tests/Quick4.cpp)
+    target_compile_features(SkellFanQuick4 PRIVATE cxx_std_17)
+    target_compile_definitions(SkellFanQuick4 PRIVATE
+        JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
+    target_compile_options(SkellFanQuick4 PRIVATE
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O0>)
+    target_link_libraries(SkellFanQuick4 PRIVATE
+        SkellFan SkellFanAssets SkellCore::DSP SkellCore::UI
+        juce::juce_audio_utils juce::juce_audio_processors
+        juce::juce_gui_extra juce::juce_dsp)
+endif()

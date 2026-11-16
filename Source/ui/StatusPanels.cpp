@@ -87,14 +87,16 @@ void LiveMeter::paint(juce::Graphics& g)
                         ?juce::Colour(0xffff6f5e):juce::Colour(0xff35473b));
         g.fillRoundedRectangle(x+5.0f,154.0f,14.0f,5.0f,2.0f);
     }
-    g.setFont(Theme::font(10.0f,true));
-    g.setColour(juce::Colour(0xffa5bbaa));
+    // The minimum 574px editor previously shrank these 10pt ticks to ~6pt.
+    // A modest bump restores legibility without changing meter geometry.
+    g.setFont(Theme::font(11.5f,true));
+    g.setColour(juce::Colour(0xffc5d8c9));
     g.drawText("0",8,39,22,12,juce::Justification::centredRight);
     g.drawText("-24",4,83,26,12,juce::Justification::centredRight);
     g.drawText("-54",4,139,26,12,juce::Justification::centredRight);
-    g.setColour(juce::Colour(0xff718a78));
-    g.setFont(Theme::font(9.0f,true));
-    g.drawText("dBFS",30,165,55,12,juce::Justification::centred);
+    g.setColour(juce::Colour(0xffbbd4c1));
+    g.setFont(Theme::font(13.0f,true));
+    g.drawText("dBFS",30,163,55,16,juce::Justification::centred);
 }
 
 void ModeInfo::refresh()
@@ -135,24 +137,28 @@ void ModeInfo::paint(juce::Graphics& g)
     g.setColour(on?juce::Colour(0xff6af589):juce::Colour(0xff86949e));
     g.setFont(Theme::font(19.0f,true));
     g.drawText(on?modes[mode]:"BYPASS",10,37,135,25,juce::Justification::centred);
-    g.setColour(juce::Colour(0xffa9b9c3));
+    // Match the mint-grey Skelly hardware palette, not the source photo's
+    // colder blue-grey, including the secondary effect description.
+    g.setColour(juce::Colour(0xffadbfaf));
     g.setFont(Theme::font(11.5f,true));
     g.drawText(sub[mode],10,66,135,17,juce::Justification::centred);
     g.setColour(juce::Colour(0xff335844));
     g.drawHorizontalLine(94,13.0f,142.0f);
-    g.setColour(juce::Colour(0xff8d9eab));
-    g.setFont(Theme::font(11.5f));
+    g.setColour(juce::Colour(0xffb3c6b7));
+    g.setFont(Theme::font(13.0f));
     g.drawText("WAVE",15,101,50,17,juce::Justification::left);
     g.setColour(juce::Colour(0xffe1f6e6));
     g.drawText(waves[shape],62,101,78,17,juce::Justification::right);
-    g.setColour(juce::Colour(0xff8d9eab));
+    g.setColour(juce::Colour(0xffb3c6b7));
     g.drawText("CLOCK",15,122,50,17,juce::Justification::left);
     g.setColour(juce::Colour(0xffe1f6e6));
-    g.drawText(host?"HOST":"FREE",62,122,78,17,juce::Justification::right);
+    // A single term across the whole UI: the rate strip already says
+    // MANUAL, so the status must not call the same state FREE.
+    g.drawText(host?"HOST":"MANUAL",62,122,78,17,juce::Justification::right);
     g.setColour(juce::Colour(0xff365a43));
     g.drawHorizontalLine(147,14.0f,142.0f);
     g.setColour(juce::Colour(0xffbcebc8));
-    g.setFont(Theme::font(11.5f,true));
+    g.setFont(Theme::font(13.0f,true));
     const auto saturation=juce::roundToInt(get("saturation"));
     const auto mix=juce::roundToInt(get("mix"));
     g.drawText("SAT " + juce::String(saturation) + "%  MIX " +

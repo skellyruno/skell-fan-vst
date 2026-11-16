@@ -17,10 +17,12 @@ SkellFanAudioProcessor::SkellFanAudioProcessor()
 {
     apvts.state.setProperty("uiPresetName","Chorus - Classic",nullptr);
     apvts.state.setProperty("uiFanAnimation",true,nullptr);
+    apvts.state.setProperty("uiAudioMotionPaused",false,nullptr);
     apvts.state.setProperty("uiScopeVisible",false,nullptr);
     apvts.state.setProperty("uiSkullSkin",1,nullptr);
-    apvts.state.setProperty("uiWidth",765,nullptr);
-    apvts.state.setProperty("uiHeight",787,nullptr);
+    // 25 percent smaller than the previous 765 x 787 default.
+    apvts.state.setProperty("uiWidth",574,nullptr);
+    apvts.state.setProperty("uiHeight",590,nullptr);
 }
 
 APVTS::ParameterLayout SkellFanAudioProcessor::makeLayout()
@@ -139,6 +141,7 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
                 std::sqrt(juce::jmax(0.0f,balance)*0.5f));
         }
     const bool hostSync=p("syncMode")>=0.5f;
+    const bool paused=motionPaused.load(std::memory_order_relaxed);
     const int syncDiv=juce::jlimit(0,6,static_cast<int>(p("syncDiv")));
     const int noteType=juce::jlimit(0,2,static_cast<int>(p("noteType")));
     const int wave=juce::jlimit(0,3,static_cast<int>(p("wave")));
@@ -168,7 +171,7 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
                             :static_cast<double>(p("rate"));
     // Only hard-lock PPQ on entry/playback or a real seek/loop jump.
     // Re-locking on every audio block while rate-smoothing caused phase clicks.
-    if(hostSync && transportPlaying && validPPQ)
+    if(hostSync && !paused && transportPlaying && validPPQ)
     {
         const double expected=lastPPQ
                + static_cast<double>(lastBlockSamples)*lastHostBpm/(sr*60.0);
@@ -186,10 +189,11 @@ void SkellFanAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
     lastBlockSamples=n;
     lastHostBpm=bpm;
     wasTransportPlaying=transportPlaying;
-    wasHostSynced=hostSync;
+    wasHostSynced=hostSync && !paused;
     lastSyncDivision=syncDiv;
     lastNoteType=noteType;
-    lfo.setFrequency(hz,hostSync);
+    // Stop modulation without changing the automated Rate or sync parameters.
+    lfo.setFrequency(paused?0.0:hz,hostSync && !paused);
     // Keep all delay histories warm, but skip the expensive interpolation for
     // modes absent from the current/fading mix.
     const auto& weightsAtBlockStart=modeFader.current();
@@ -350,6 +354,13 @@ void SkellFanAudioProcessor::loadFactoryPreset(int i)
     }
     apvts.state.setProperty("uiPresetName",z.name,nullptr);
 }
+void SkellFanAudioProcessor::setMotionPaused(bool paused)
+{
+    // Only the message thread writes ValueTree state; the DSP reads an atomic.
+    motionPaused.store(paused,std::memory_order_release);
+    apvts.state.setProperty("uiAudioMotionPaused",paused,nullptr);
+    apvts.state.setProperty("uiFanAnimation",!paused,nullptr);
+}
 void SkellFanAudioProcessor::getStateInformation(juce::MemoryBlock& data)
 {
     if(auto xml=apvts.copyState().createXml())copyXmlToBinary(*xml,data);
@@ -358,7 +369,13 @@ void SkellFanAudioProcessor::setStateInformation(const void* data,int size)
 {
     if(auto xml=getXmlFromBinary(data,size))
         if(xml->hasTagName(apvts.state.getType().toString()))
+        {
             apvts.replaceState(juce::ValueTree::fromXml(*xml));
+            motionPaused.store(static_cast<bool>(apvts.state.getProperty(
+                "uiAudioMotionPaused",
+                !static_cast<bool>(apvts.state.getProperty("uiFanAnimation",true)))),
+                std::memory_order_release);
+        }
 }
 juce::AudioProcessorEditor* SkellFanAudioProcessor::createEditor()
 {return new SkellFanAudioProcessorEditor(*this);}
