@@ -221,6 +221,15 @@ class SourceSanity(unittest.TestCase):
         self.assertIn('fanSwitch.setMouseCursor',editor)
         self.assertIn('g.drawText("SAT " + juce::String(saturation)',status)
 
+    def test_vst3_program_list_has_non_empty_name(self):
+        processor = (ROOT / 'Source/PluginProcessor.h').read_text(encoding='utf-8')
+        self.assertIn('int getNumPrograms() override { return 1; }', processor)
+        self.assertIn('getProgramName(int index) override', processor)
+        self.assertIn(
+            'return index == 0 ? juce::String("Chorus - Classic") : juce::String{};',
+            processor
+        )
+
     def test_no_deprecated_float_helpers(self):
         sat = (ROOT / 'Source/dsp/Saturator.h').read_text(encoding='utf-8')
         self.assertIn('initProcessing', sat)
