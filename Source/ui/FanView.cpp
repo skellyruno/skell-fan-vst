@@ -36,12 +36,16 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
             {
                 const auto c=pixels.getPixelColour(x,y);
                 if (c.getFloatAlpha()<0.08f) continue;
-                // Fully neutralize every static under-guard pixel. The
-                // previous hue gate left green low-saturation antialiasing
-                // specks and made the arc appear dusty in HiDPI snapshots.
-                const float metalValue=c.getSaturation()>0.08f
-                    ? juce::jlimit(0.16f,0.67f,c.getBrightness()*0.68f)
-                    : c.getBrightness();
+                // The earlier blanket grayscale repaint altered even the
+                // original neutral white plastic from (196,195,200) to
+                // (200,200,200) inside one hard rectangle. Preserve all
+                // low-chroma background pixels. Recolor only the actual
+                // green/cyan static arc and its tinted antialiasing.
+                const float sat=c.getSaturation();
+                const float hue=c.getHue();
+                if (sat<0.045f || hue<0.20f || hue>0.78f) continue;
+                const float metalValue=juce::jlimit(0.16f,0.77f,
+                                                   c.getBrightness()*0.75f);
                 pixels.setPixelColour(x,y,juce::Colour::fromHSV(
                     0.0f,0.0f,metalValue,c.getFloatAlpha()));
             }
