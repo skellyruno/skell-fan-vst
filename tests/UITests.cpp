@@ -339,12 +339,22 @@ void testEditor(SkellFanAudioProcessor& processor)
                   "Right casing edge uses smooth clean plastic, not pixel noise");
             check(snapshot.getPixelAt(520,376).getBrightness()<0.45f,
                   "Only the skull face is visible; the key shaft is clipped");
-            // When CHORUS is active, the CHO hardware tile must be brighter
-            // green than inactive ROT: selection must not be ambiguous.
-            const auto activeChorus=snapshot.getPixelAt(431,845);
-            const auto inactiveRotary=snapshot.getPixelAt(325,845);
-            check(activeChorus.getGreen()>inactiveRotary.getGreen()+35,
-                  "Active CHORUS illuminates clearly above the inactive ROT key");
+            // Sample multiple clean hardware-face pixels ABOVE the engraved
+            // glyphs. At y=845 the new CHORUS symbol crossed the old probe,
+            // making a genuinely selected mode fail a one-pixel comparison.
+            // Compare the physical pad gradient, not a letter or icon.
+            const int litChorusGreen=
+                (snapshot.getPixelAt(420,817).getGreen()
+                +snapshot.getPixelAt(431,817).getGreen()
+                +snapshot.getPixelAt(420,821).getGreen()
+                +snapshot.getPixelAt(431,821).getGreen())/4;
+            const int idleRotGreen=
+                (snapshot.getPixelAt(313,817).getGreen()
+                +snapshot.getPixelAt(325,817).getGreen()
+                +snapshot.getPixelAt(313,821).getGreen()
+                +snapshot.getPixelAt(325,821).getGreen())/4;
+            check(litChorusGreen>idleRotGreen+30,
+                  "Active CHORUS face is distinctly brighter than inactive ROTARY");
             // Sample the painted key faces, not the M/H letter glyphs:
             // black active-letter pixels and bright inactive-letter pixels
             // invert a valid selection-contrast comparison.

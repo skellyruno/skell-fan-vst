@@ -141,6 +141,10 @@ void TopBar::paint(juce::Graphics& g)
 {
     const auto palette=skellcore::ui::skullPalette(skin);
     g.fillAll(palette.background);
+    // At the minimum 574px width the second-line tagline renders at ~5px
+    // and is visual noise. Centre the readable title instead; other sizes
+    // preserve the full original branded two-line header.
+    const bool compactHeader=getWidth()<700;
     g.addTransform(juce::AffineTransform::scale(getWidth()/956.0f,getHeight()/60.0f));
     g.setColour(palette.line);g.fillRect(0,59,956,1);
 
@@ -149,10 +153,13 @@ void TopBar::paint(juce::Graphics& g)
     title.setJustification(juce::Justification::centredLeft);
     title.append("SKELL",Theme::font(17.0f,true),palette.bone);
     title.append("FAN",Theme::font(17.0f,true),palette.accent);
-    title.draw(g,juce::Rectangle<float>{109.0f,9.0f,106.0f,26.0f});
-    g.setColour(palette.boneDim);
-    g.setFont(Theme::font(9.0f,true));
-    g.drawText("FAN MOD FX",110,35,96,13,juce::Justification::centredLeft);
+    title.draw(g,juce::Rectangle<float>{109.0f,compactHeader?17.0f:9.0f,106.0f,26.0f});
+    if(!compactHeader)
+    {
+        g.setColour(palette.boneDim);
+        g.setFont(Theme::font(9.0f,true));
+        g.drawText("FAN MOD FX",110,35,96,13,juce::Justification::centredLeft);
+    }
     g.setColour(palette.line);
     g.drawVerticalLine(208,10.0f,49.0f);
     g.drawVerticalLine(895,10.0f,49.0f);
