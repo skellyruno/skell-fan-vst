@@ -224,9 +224,10 @@ class SourceSanity(unittest.TestCase):
     def test_vst3_program_list_has_non_empty_name(self):
         processor = (ROOT / 'Source/PluginProcessor.h').read_text(encoding='utf-8')
         self.assertIn('int getNumPrograms() override { return 1; }', processor)
-        self.assertRegex(
-            processor,
-            r'getProgramName\\(int index\\) override\\s*\\{\\s*return index == 0 \\? juce::String\\("Chorus - Classic"\\) : juce::String\\{\\};\\s*\\}'
+        self.assertIn('getProgramName(int index) override', processor)
+        self.assertIn(
+            'return index == 0 ? juce::String("Chorus - Classic") : juce::String{};',
+            processor
         )
 
     def test_no_deprecated_float_helpers(self):
