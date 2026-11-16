@@ -169,6 +169,11 @@ class SourceSanity(unittest.TestCase):
         keys=(ROOT/'Source/ui/KeyButton.cpp').read_text(encoding='utf-8')
         self.assertIn('lit?Theme::cyan:juce::Colour(0xff33483a)',keys)
         self.assertIn('const auto offTop=juce::Colour(0xff77877e)',keys)
+        for mode in ('VIBRATO', 'ROTARY', 'TREMOLO', 'CHORUS'):
+            self.assertIn('mode=="'+mode+'"', keys)
+        self.assertIn('g.strokePath(glyph',keys)
+        fan=(ROOT/'Source/ui/FanView.cpp').read_text(encoding='utf-8')
+        self.assertIn('const int fringeTop=',fan)
         self.assertNotIn('tint.interpolatedWith(juce::Colours::white,.45f)',keys)
         self.assertIn('"DRY/WET"',top)
 

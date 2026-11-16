@@ -143,6 +143,32 @@ void FanView::setSkin(skellcore::ui::SkullSkin skin)
                        pixels.getPixelColour(x,cleanRow),weight));
             }
 
+        // The left foot has a fine cyan/blue scratch from the original photo.
+        // Sample intact adjacent plastic above/below the blue pixels, rather
+        // than drawing another bright line or covering the green control rim.
+        // This cached static-image correction never touches the animated fan.
+        const int fringeTop=juce::jmax(0,juce::roundToInt(800.0f*sy));
+        const int fringeBottom=juce::jmin(body.getHeight(),juce::roundToInt(915.0f*sy));
+        for(int y=fringeTop;y<fringeBottom;++y)
+            for(int x=juce::jmax(0,juce::roundToInt(178.0f*sx));
+                    x<juce::jmin(body.getWidth(),juce::roundToInt(206.0f*sx));++x)
+            {
+                const auto c=pixels.getPixelColour(x,y);
+                if(c.getFloatAlpha()<0.18f || c.getSaturation()<0.06f ||
+                   c.getBlue()<=c.getRed()+12 ||
+                   c.getBlue()<=c.getGreen()+5) continue;
+                const int sampleY=juce::jmin(body.getHeight()-1,
+                                            y+juce::jmax(1,juce::roundToInt(15.0f*sy)));
+                const auto clean=pixels.getPixelColour(x,sampleY);
+                const auto neutral=juce::Colour::fromHSV(0.0f,0.015f,
+                                      c.getBrightness(),c.getFloatAlpha());
+                const auto replacement=(clean.getFloatAlpha()>0.8f &&
+                    clean.getBlue()<=clean.getRed()+9)
+                    ?neutral.interpolatedWith(clean.withAlpha(c.getFloatAlpha()),0.65f)
+                    :neutral;
+                pixels.setPixelColour(x,y,replacement);
+            }
+
         // The original photograph's alpha edge has loose white and black
         // speckles on BOTH shoulders, especially below y=853. Color/hue
         // neutralization cannot repair those alpha holes. Trace a smooth

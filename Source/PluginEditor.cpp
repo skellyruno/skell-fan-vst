@@ -113,10 +113,10 @@ void SkellFanAudioProcessorEditor::PlateOverlay::paint(juce::Graphics& g)
     for(int y=742;y<919;y+=3)g.drawLine(224.0f,static_cast<float>(y),731.0f,static_cast<float>(y),.5f);
     // Compact labels remain separated at the 574 px minimum editor width.
     // The mode information panel retains the full effect names.
-    label(g,"VIB",{246,885,51,20},12.5f);
-    label(g,"ROT",{301,885,50,20},12.5f);
-    label(g,"TRM",{354,885,51,20},12.5f);
-    label(g,"CHO",{408,885,49,20},12.5f);
+    label(g,"VIB",{246,885,51,20},14.0f);
+    label(g,"ROT",{301,885,50,20},14.0f);
+    label(g,"TRM",{354,885,51,20},14.0f);
+    label(g,"CHO",{408,885,49,20},14.0f);
     // One aligned RATE / SAT / WAVE hardware row: captions live below knobs.
     label(g,"SYNC",{475,733,79,18},13.0f);
     label(g,"RHYTHM",{560,733,127,18},13.0f);
