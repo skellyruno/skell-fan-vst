@@ -19,7 +19,7 @@ try{
  Throws {RunInstaller @{PackageRoot=$script:root;InstallRoot=$occupied;DataRoot=(Join-Path $temp 'occupieddata');Approve=$true}} 'not owned' 'Unowned existing install refused'
  Assert ((Get-Content $sentinel -Raw).Trim() -eq 'keep') 'Existing data preserved'
  $tamper=Join-Path $temp 'tamper';CopyPackage $tamper;$bin=Join-Path $tamper 'SkellFan.vst3\Contents\x86_64-win\SkellFan.vst3';$bytes=[IO.File]::ReadAllBytes($bin);$bytes[128]=$bytes[128]-bxor 1;[IO.File]::WriteAllBytes($bin,$bytes)
- Throws {RunInstaller @{PackageRoot=$tamper;InstallRoot=(Join-Path $temp 'ti');DataRoot=(Join-Path $temp 'td');Approve=$true}} 'SHA-256 mismatch' 'Tampered package refused'
+ Throws {RunInstaller @{PackageRoot=$tamper;InstallRoot=(Join-Path $temp 'ti');DataRoot=(Join-Path $temp 'td');Approve=$true}} 'Binary/moduleinfo hash differs from provenance' 'Tampered package refused'
  $install=Join-Path $temp 'install';$data=Join-Path $temp 'data';$result=RunInstaller @{PackageRoot=$script:root;InstallRoot=$install;DataRoot=$data;Approve=$true};$target=Join-Path $install 'SkellFan.vst3';$statePath=Join-Path $data 'install-state.json'
  Assert ($result.Status -eq 'Installed'-and(Test-Path $statePath)) 'Fresh per-user install succeeds'
  $same=RunInstaller @{PackageRoot=$script:root;InstallRoot=$install;DataRoot=$data;Approve=$true};Assert ($same.Status -eq 'AlreadyCurrent') 'Install is idempotent'
