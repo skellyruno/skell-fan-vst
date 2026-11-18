@@ -75,9 +75,25 @@ jobs:
           plugins: package/SkellFan.vst3
           strictness-level: 5
           pluginval-version: v2.0.0-beta3
+      - name: Stage private preview installer and guide
+        shell: pwsh
+        run: |
+          Copy-Item -LiteralPath scripts/Install-SkellFanPreview.ps1 -Destination package/Install-SkellFanPreview.ps1
+          Copy-Item -LiteralPath docs/INSTALL_PREVIEW.md -Destination package/INSTALL_PREVIEW.md
       - name: Write release provenance after all validation gates
         shell: pwsh
         run: python scripts/verify_vst3_package.py --bundle package/SkellFan.vst3 --manifest package/build-info.json --source-commit "$env:SOURCE_COMMIT" --ci-commit "$env:GITHUB_SHA" --run-id "$env:GITHUB_RUN_ID" --pluginval-passed
+      - name: Add installer and guide hashes
+        shell: pwsh
+        run: |
+          $sumFile = 'package/SHA256SUMS.txt'
+          $lines = @(Get-Content -LiteralPath $sumFile -Encoding ascii)
+          $lines += "$((Get-FileHash -LiteralPath 'package/Install-SkellFanPreview.ps1' -Algorithm SHA256).Hash.ToLowerInvariant())  Install-SkellFanPreview.ps1"
+          $lines += "$((Get-FileHash -LiteralPath 'package/INSTALL_PREVIEW.md' -Algorithm SHA256).Hash.ToLowerInvariant())  INSTALL_PREVIEW.md"
+          Set-Content -LiteralPath $sumFile -Value $lines -Encoding ascii
+      - name: Test per-user preview install, update and rollback
+        shell: pwsh
+        run: pwsh -NoProfile -File tests/Test-SkellFanPreviewInstaller.ps1 -PackageRoot package
       - uses: actions/upload-artifact@v6
         with:
           retention-days: 14
