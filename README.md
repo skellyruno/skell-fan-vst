@@ -278,3 +278,26 @@ BreezeMod-UI-Snapshots (real offscreen JUCE editor renderings).
 The Windows release candidate is VST3-only. The release workflow normalizes JUCE's trailing-comma `moduleinfo.json` output in the staged bundle (without modifying the compiled module), then strictly validates product/vendor/version identity, both VST3 factory classes and unique 128-bit CIDs. It verifies the module's PE signature, AMD64 machine and PE32+ optional header, rejects unexpected Standalone executables and nested archives, validates the exact staged bundle with pluginval strictness 5, and writes `build-info.json` plus `SHA256SUMS.txt` only after those gates pass.
 
 Artifacts are **preview-only** until FL Studio scan, automation, state save/reopen, existing-project compatibility, real-music A/B, target-hardware CPU/latency, license/attribution and vendor support/contact gates are accepted.
+
+
+## Private Windows VST3 preview installer
+
+The preview ZIP includes **Install-SkellFanPreview.ps1** and
+**INSTALL_PREVIEW.md**. It installs per-user to
+**%LOCALAPPDATA%\Programs\Common\VST3** and stores verified rollback
+snapshots under **%LOCALAPPDATA%\Skell Audio\SkellFan**.
+
+Preview first:
+
+~~~powershell
+pwsh -NoProfile -File .\Install-SkellFanPreview.ps1 -PackageRoot . -WhatIf
+~~~
+
+After reviewing the preview, install with **-Approve**. The installer
+validates product/version/VST3 class IDs/AMD64 PE32+ and all SHA-256 entries,
+refuses unsafe paths and unowned existing installs, stages updates, backs up
+the previous verified version, and supports explicit rollback. It does not
+require elevation or modify registry settings, FL Studio projects, presets,
+or automation IDs. This remains an unsigned private preview, not a
+commercial release; host/audio/compatibility/licensing/support gates remain
+unverified.
