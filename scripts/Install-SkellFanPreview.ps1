@@ -1,8 +1,8 @@
 [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='High')]
 param(
  [string]$PackageRoot=$PSScriptRoot,
- [string]$InstallRoot=(Join-Path $env:LOCALAPPDATA 'Programs\Common\VST3'),
- [string]$DataRoot=(Join-Path $env:LOCALAPPDATA 'Skell Audio\SkellFan'),
+ [string]$InstallRoot,
+ [string]$DataRoot,
  [string]$RollbackBackup,
  [switch]$Approve
 )
@@ -32,7 +32,38 @@ function SafePath([string]$p) {
 function NoLinks([string]$p) {
  foreach($i in Get-ChildItem -LiteralPath $p -Force -Recurse -ErrorAction Stop){if($i.Attributes -band [IO.FileAttributes]::ReparsePoint){throw "Reparse point in package: $($i.FullName)"}}
 }
-function Json([string]$p) { Get-Content -LiteralPath $p -Raw | ConvertFrom-Json -AsHashtable -ErrorAction Stop }
+function AssertStrictJsonElement {
+ param([System.Text.Json.JsonElement]$Element,[string]$Path)
+ if ($Element.ValueKind -eq [System.Text.Json.JsonValueKind]::Object) {
+  $keys=[System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+  foreach($property in $Element.EnumerateObject()) {
+   if(!$keys.Add($property.Name)) {
+    throw "Duplicate or case-ambiguous JSON key '$($property.Name)' at $Path"
+   }
+   AssertStrictJsonElement -Element $property.Value -Path "$Path.$($property.Name)"
+  }
+ } elseif ($Element.ValueKind -eq [System.Text.Json.JsonValueKind]::Array) {
+  $index=0
+  foreach($item in $Element.EnumerateArray()) {
+   AssertStrictJsonElement -Element $item -Path "$Path[$index]"
+   $index++
+  }
+ }
+}
+function Json([string]$p) {
+ $raw=[IO.File]::ReadAllText($p)
+ $document=$null
+ try {
+  $document=[System.Text.Json.JsonDocument]::Parse($raw)
+  AssertStrictJsonElement -Element $document.RootElement -Path $p
+ } catch {
+  throw "Invalid strict JSON in '$p': $($_.Exception.Message)"
+ } finally {
+  if($document){$document.Dispose()}
+ }
+ try { return (ConvertFrom-Json -InputObject $raw -AsHashtable -ErrorAction Stop) }
+ catch { throw "Invalid JSON in '$p': $($_.Exception.Message)" }
+}
 function SaveJson([string]$p,$v) {
  $parent=Split-Path -Parent $p
  if(!(Test-Path -LiteralPath $parent)){New-Item -ItemType Directory -Path $parent -Force|Out-Null}
@@ -56,7 +87,7 @@ function ValidateBundle([string]$b,[string]$version) {
  [pscustomobject]@{Binary=$bin;ModuleInfo=$mi}
 }
 function ValidatePackage {
- $r=Full $PackageRoot
+ $r=SafePath $PackageRoot
  NoLinks $r
  $expected=@('SkellFan.vst3','build-info.json','SHA256SUMS.txt','Install-SkellFanPreview.ps1','INSTALL_PREVIEW.md')|Sort-Object
  $actual=@(Get-ChildItem -LiteralPath $r -Force|Select-Object -ExpandProperty Name|Sort-Object)
@@ -167,5 +198,14 @@ function RollbackPreview {
   throw
  }finally{if(Test-Path $stage){Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue}}
 }
-if(!$env:LOCALAPPDATA){throw 'Windows LOCALAPPDATA is required'}
+$localAppData=[Environment]::GetEnvironmentVariable('LOCALAPPDATA')
+$installWasProvided=-not [string]::IsNullOrWhiteSpace($InstallRoot)
+$dataWasProvided=-not [string]::IsNullOrWhiteSpace($DataRoot)
+if(-not $installWasProvided -or -not $dataWasProvided) {
+ if([string]::IsNullOrWhiteSpace($localAppData) -or -not [IO.Path]::IsPathRooted($localAppData)) {
+  throw 'LOCALAPPDATA must be an absolute path unless both -InstallRoot and -DataRoot are explicitly supplied'
+ }
+ if(-not $installWasProvided){$InstallRoot=Join-Path $localAppData 'Programs\Common\VST3'}
+ if(-not $dataWasProvided){$DataRoot=Join-Path $localAppData 'Skell Audio\SkellFan'}
+}
 if($RollbackBackup){RollbackPreview}else{InstallPreview}
